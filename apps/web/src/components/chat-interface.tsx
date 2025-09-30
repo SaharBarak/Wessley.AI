@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Send, MessageCircle, X, Trash2, Bot, User } from 'lucide-react'
-import { useChatStore } from '@/stores/chat'
+import { useChat } from 'ai/react'
 import { useAnalysisStore } from '@/stores/analysis'
 import type { Component } from '@fusebox/types'
 
@@ -11,25 +11,35 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ className = "" }: ChatInterfaceProps) {
-  const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  
-  const { 
-    messages, 
-    isLoading, 
-    error, 
-    isOpen, 
-    sendMessage, 
-    clearMessages, 
-    setIsOpen, 
-    clearError 
-  } = useChatStore()
   
   const { 
     currentAnalysis, 
     selectedComponentId 
   } = useAnalysisStore()
+
+  // Use AI SDK's useChat hook
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    isLoading,
+    setMessages 
+  } = useChat({
+    api: '/api/chat',
+    body: {
+      context: currentAnalysis ? {
+        components: currentAnalysis.components,
+        selectedComponentId: selectedComponentId || undefined,
+        imageId: currentAnalysis.metadata?.imageId
+      } : undefined
+    }
+  })
+
+  // Chat UI state
+  const [isOpen, setIsOpen] = useState(false)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -43,21 +53,9 @@ export function ChatInterface({ className = "" }: ChatInterfaceProps) {
     }
   }, [isOpen])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputValue.trim() || isLoading) return
-
-    const message = inputValue.trim()
-    setInputValue('')
-
-    // Build context from current analysis
-    const context = currentAnalysis ? {
-      components: currentAnalysis.components,
-      selectedComponentId: selectedComponentId || undefined,
-      imageId: currentAnalysis.metadata?.imageId
-    } : undefined
-
-    await sendMessage(message, context)
+  // Clear messages function
+  const clearMessages = () => {
+    setMessages([])
   }
 
   const getWelcomeMessage = () => {
@@ -154,7 +152,7 @@ export function ChatInterface({ className = "" }: ChatInterfaceProps) {
             >
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               <p className="text-xs opacity-75 mt-1">
-                {new Date(message.timestamp).toLocaleTimeString()}
+                {message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : ''}
               </p>
             </div>
           </div>
@@ -173,17 +171,6 @@ export function ChatInterface({ className = "" }: ChatInterfaceProps) {
           </div>
         )}
 
-        {error && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-            <p className="text-destructive text-sm">{error}</p>
-            <button
-              onClick={clearError}
-              className="text-destructive hover:text-destructive/80 text-xs mt-1"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
 
         <div ref={messagesEndRef} />
       </div>
@@ -194,8 +181,8 @@ export function ChatInterface({ className = "" }: ChatInterfaceProps) {
           <input
             ref={inputRef}
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={input}
+            onChange={handleInputChange}
             placeholder="Ask about electrical components..."
             className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             disabled={isLoading}
@@ -203,7 +190,7 @@ export function ChatInterface({ className = "" }: ChatInterfaceProps) {
           
           <button
             type="submit"
-            disabled={!inputValue.trim() || isLoading}
+            disabled={!input.trim() || isLoading}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
