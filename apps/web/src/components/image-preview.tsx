@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, RotateCcw, ZoomIn, ZoomOut, Download, Trash2, AlertCircle } from 'lucide-react'
+import { X, RotateCcw, ZoomIn, ZoomOut, Download, Trash2, AlertCircle, Zap } from 'lucide-react'
 import { useUploadStore } from '@/stores/upload'
+import { useAnalysisStore } from '@/stores/analysis'
 
 interface ImagePreviewProps {
   imageId: string
@@ -11,15 +12,24 @@ interface ImagePreviewProps {
 }
 
 export function ImagePreview({ imageId, onClose, onAnalyze }: ImagePreviewProps) {
-  const { images, removeImage, setCurrentImage } = useUploadStore()
+  const { images, removeImage, setCurrentImage, updateImageStatus } = useUploadStore()
+  const { analyzeImage, isAnalyzing, analysisError } = useAnalysisStore()
   const image = images.find(img => img.id === imageId)
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
 
   if (!image) return null
 
-  const handleAnalyze = () => {
-    onAnalyze?.(imageId)
+  const handleAnalyze = async () => {
+    try {
+      updateImageStatus(imageId, 'analyzing')
+      await analyzeImage(image.file, imageId)
+      updateImageStatus(imageId, 'analyzed')
+      onAnalyze?.(imageId)
+    } catch (error) {
+      updateImageStatus(imageId, 'error')
+      console.error('Analysis failed:', error)
+    }
   }
 
   const handleRemove = () => {
@@ -178,13 +188,21 @@ export function ImagePreview({ imageId, onClose, onAnalyze }: ImagePreviewProps)
               Close
             </button>
             
-            {image.status === 'uploaded' && (
+            {(image.status === 'uploaded' || image.status === 'error') && (
               <button
                 onClick={handleAnalyze}
-                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                disabled={isAnalyzing}
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                Analyze Components
+                <Zap className="w-4 h-4" />
+                <span>{isAnalyzing ? 'Analyzing...' : 'Analyze Components'}</span>
               </button>
+            )}
+            
+            {analysisError && (
+              <div className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+                {analysisError}
+              </div>
             )}
           </div>
         </div>
