@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import analysisRoutes from './routes/analysis'
+import chatRoutes from './routes/chat'
 
 // Load environment variables
 dotenv.config()
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/analysis', analysisRoutes)
+app.use('/api/chat', chatRoutes)
 
 // General API status
 app.get('/api/status', (req, res) => {
@@ -29,6 +31,7 @@ app.get('/api/status', (req, res) => {
     version: '0.1.0',
     services: {
       analysis: '/api/analysis',
+      chat: '/api/chat',
       health: '/health'
     }
   })

@@ -7,6 +7,7 @@ import { useAnalysisStore } from '@/stores/analysis'
 import { UploadZone } from '@/components/upload-zone'
 import { ImageGallery } from '@/components/image-gallery'
 import { DiagramView } from '@/components/diagram-view'
+import { ChatInterface } from '@/components/chat-interface'
 
 export default function Home() {
   const { isAuthenticated, user, signIn, signOut } = useAuthStore()
@@ -165,6 +166,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Chat Interface */}
+      <ChatInterface />
     </main>
   )
 }
