@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import type { Component, AnalysisResponse } from '@fusebox/types'
+import type { Component, AnalysisResponse, MermaidDiagram } from '@fusebox/types'
 import { apiService } from '@/lib/api'
+import { MermaidService } from '@/lib/mermaid'
 
 interface AnalysisState {
   // Current analysis
@@ -14,12 +15,16 @@ interface AnalysisState {
   // Selected component for details
   selectedComponentId: string | null
   
+  // Mermaid diagram
+  currentDiagram: MermaidDiagram | null
+  
   // Actions
   analyzeImage: (file: File, imageId: string) => Promise<void>
   setSelectedComponent: (componentId: string | null) => void
   clearCurrentAnalysis: () => void
   clearError: () => void
   getComponentById: (id: string) => Component | null
+  generateDiagram: () => void
 }
 
 export const useAnalysisStore = create<AnalysisState>((set, get) => ({
@@ -28,6 +33,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   analysisError: null,
   analysisHistory: [],
   selectedComponentId: null,
+  currentDiagram: null,
 
   analyzeImage: async (file: File, imageId: string) => {
     set({ 
@@ -49,6 +55,9 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
         analysisHistory: [result, ...state.analysisHistory.slice(0, 9)] // Keep last 10
       }))
       
+      // Auto-generate diagram after successful analysis
+      get().generateDiagram()
+      
     } catch (error: any) {
       console.error('Analysis failed:', error)
       
@@ -62,13 +71,25 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
 
   setSelectedComponent: (componentId: string | null) => {
     set({ selectedComponentId: componentId })
+    
+    // Regenerate diagram with highlighting if we have an analysis
+    const state = get()
+    if (state.currentAnalysis) {
+      const mermaidService = MermaidService.getInstance()
+      const diagram = mermaidService.generateWithHighlight(
+        state.currentAnalysis.components,
+        componentId || undefined
+      )
+      set({ currentDiagram: diagram })
+    }
   },
 
   clearCurrentAnalysis: () => {
     set({
       currentAnalysis: null,
       selectedComponentId: null,
-      analysisError: null
+      analysisError: null,
+      currentDiagram: null
     })
   },
 
@@ -79,5 +100,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   getComponentById: (id: string) => {
     const state = get()
     return state.currentAnalysis?.components.find(comp => comp.id === id) || null
+  },
+
+  generateDiagram: () => {
+    const state = get()
+    if (!state.currentAnalysis?.components) return
+    
+    const mermaidService = MermaidService.getInstance()
+    const diagram = mermaidService.generateDiagram(state.currentAnalysis.components)
+    
+    set({ currentDiagram: diagram })
   }
 }))

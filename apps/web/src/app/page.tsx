@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useUploadStore } from '@/stores/upload'
+import { useAnalysisStore } from '@/stores/analysis'
 import { UploadZone } from '@/components/upload-zone'
 import { ImageGallery } from '@/components/image-gallery'
+import { DiagramView } from '@/components/diagram-view'
 
 export default function Home() {
   const { isAuthenticated, user, signIn, signOut } = useAuthStore()
   const { images } = useUploadStore()
-  const [activeTab, setActiveTab] = useState<'upload' | 'gallery'>('upload')
+  const { currentAnalysis } = useAnalysisStore()
+  const [activeTab, setActiveTab] = useState<'upload' | 'gallery' | 'diagram'>('upload')
 
   const handleUpload = (file: File) => {
     console.log('File uploaded:', file.name)
@@ -18,6 +21,13 @@ export default function Home() {
       setActiveTab('gallery')
     }
   }
+
+  // Auto-navigate to diagram when analysis completes
+  useEffect(() => {
+    if (currentAnalysis && activeTab !== 'diagram') {
+      setActiveTab('diagram')
+    }
+  }, [currentAnalysis])
 
   if (!isAuthenticated) {
     return (
@@ -104,10 +114,27 @@ export default function Home() {
                 </span>
               )}
             </button>
+
+            <button
+              onClick={() => setActiveTab('diagram')}
+              className={`px-4 py-2 rounded-md font-medium transition-colors relative ${
+                activeTab === 'diagram'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              disabled={!currentAnalysis}
+            >
+              Diagram
+              {currentAnalysis && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {currentAnalysis.components.length}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Content */}
-          <div className="bg-card border rounded-lg p-6">
+          <div className={activeTab === 'diagram' ? '' : 'bg-card border rounded-lg p-6'}>
             {activeTab === 'upload' ? (
               <div className="space-y-8">
                 <div className="text-center">
@@ -130,8 +157,10 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : activeTab === 'gallery' ? (
               <ImageGallery />
+            ) : (
+              <DiagramView />
             )}
           </div>
         </div>
