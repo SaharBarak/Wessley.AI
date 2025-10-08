@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "EventEnvelope@1",
+  "title": "Event Envelope",
+  "description": "Standard envelope for all pipeline events written to data lake",
+  "type": "object",
+  "required": ["eventId", "jobId", "timestamp", "stage", "eventType", "payloadHash"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event"
+    },
+    "jobId": {
+      "type": "string",
+      "format": "uuid", 
+      "description": "Pipeline job identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when event occurred"
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["raw", "normalized", "validated", "enriched", "spatialized", "built", "error"],
+      "description": "Pipeline stage where event occurred"
+    },
+    "step": {
+      "type": "string",
+      "description": "Specific step within stage (optional)"
+    },
+    "eventType": {
+      "type": "string",
+      "enum": ["start", "progress", "success", "error", "cache_hit", "manual_review"],
+      "description": "Type of event"
+    },
+    "payloadHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hash of payload for deduplication"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data payload"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "vehicleSig": {
+          "type": "string",
+          "description": "Vehicle signature (brand:model:year)"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Processing duration in milliseconds"
+        },
+        "cost": {
+          "type": "number", 
+          "description": "Processing cost in USD"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score for AI-generated content"
+        }
+      }
+    }
+  }
+}

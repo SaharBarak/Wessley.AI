@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ElectroGraph3D@1",
+  "title": "3D Electrical Graph",
+  "description": "ElectroGraph with 3D positioning and routing for visualization",
+  "type": "object", 
+  "required": ["vehicleId", "nodes", "edges", "routes"],
+  "properties": {
+    "vehicleId": {
+      "type": "string",
+      "description": "Vehicle identifier (brand:model:year)"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "brand": {"type": "string"},
+        "model": {"type": "string"}, 
+        "year": {"type": "integer"},
+        "boundingBox": {
+          "type": "object",
+          "required": ["min", "max"],
+          "properties": {
+            "min": {
+              "type": "array",
+              "items": {"type": "number"},
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "[x, y, z] minimum bounds"
+            },
+            "max": {
+              "type": "array", 
+              "items": {"type": "number"},
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "[x, y, z] maximum bounds"
+            }
+          }
+        },
+        "scale": {
+          "type": "number",
+          "description": "Scale factor (1.0 = 1 meter)"
+        },
+        "generated": {"type": "string", "format": "date-time"}
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label", "position"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Node identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["battery", "fuse", "relay", "connector", "ecu", "sensor", "actuator", "lamp", "motor", "splice", "ground", "terminal"]
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable label"
+          },
+          "position": {
+            "type": "array",
+            "items": {"type": "number"},
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "[x, y, z] position in 3D space"
+          },
+          "rotation": {
+            "type": "array",
+            "items": {"type": "number"},
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "[rx, ry, rz] rotation in radians"
+          },
+          "scale": {
+            "type": "array",
+            "items": {"type": "number"},
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "[sx, sy, sz] scale factors"
+          },
+          "zone": {
+            "type": "string",
+            "description": "Physical zone"
+          },
+          "circuits": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Circuit IDs"
+          },
+          "mesh": {
+            "type": "object",
+            "properties": {
+              "geometry": {
+                "type": "string",
+                "enum": ["box", "cylinder", "sphere", "custom"],
+                "description": "Mesh geometry type"
+              },
+              "material": {
+                "type": "string",
+                "description": "Material name/reference"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "description": "Hex color code"
+              },
+              "userData": {
+                "type": "object",
+                "description": "Custom data for interactivity"
+              }
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "to"],
+        "properties": {
+          "id": {"type": "string"},
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "type": {
+            "type": "string",
+            "enum": ["power", "ground", "signal", "data"]
+          },
+          "circuit": {"type": "string"},
+          "properties": {
+            "type": "object",
+            "properties": {
+              "wireGauge": {"type": "string"},
+              "wireColor": {"type": "string"},
+              "length": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["edgeId", "path"],
+        "properties": {
+          "edgeId": {
+            "type": "string",
+            "description": "Reference to edge ID"
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {"type": "number"},
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "minItems": 2,
+            "description": "Array of [x,y,z] waypoints for wire routing"
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {"type": "string"},
+              "radius": {"type": "number"},
+              "segments": {"type": "integer"},
+              "material": {"type": "string"}
+            }
+          }
+        }
+      },
+      "description": "3D routing paths for wire visualization"
+    },
+    "circuits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "nodes"],
+        "properties": {
+          "id": {"type": "string"},
+          "label": {"type": "string"},
+          "nodes": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Circuit theme color"
+          },
+          "group": {
+            "type": "string",
+            "description": "Three.js group name for circuit"
+          }
+        }
+      }
+    }
+  }
+}
