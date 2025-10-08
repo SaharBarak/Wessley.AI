@@ -1,0 +1,511 @@
+{
+  "name": "sub.cache-lookup",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+              "name": "input.key",
+              "value": "={{ $json.key }}",
+              "type": "string"
+            },
+            {
+              "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+              "name": "input.type",
+              "value": "={{ $json.type || 'default' }}",
+              "type": "string"
+            },
+            {
+              "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+              "name": "input.maxAge",
+              "value": "={{ $json.maxAge || 86400000 }}",
+              "type": "number"
+            },
+            {
+              "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+              "name": "input.fallbackToPattern",
+              "value": "={{ $json.fallbackToPattern || false }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "leftValue": "={{ $('Parse Input').item.json.input.key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Parse Input'].json.INGEST_URL || 'http://ingest:3001' }}/cache/{{ encodeURIComponent($('Parse Input').item.json.input.key) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Cache-Type",
+              "value": "={{ $('Parse Input').item.json.input.type }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 2,
+            "waitBetween": 500
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Cache Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+              "leftValue": "={{ $('Cache Lookup').item.json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+      "name": "Check Cache Hit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process cache hit and check age\nconst cacheResponse = $input.first().json.body;\nconst maxAge = $('Parse Input').item.json.input.maxAge;\n\nif (!cacheResponse || !cacheResponse.value) {\n  return [{\n    cacheHit: false,\n    reason: 'Invalid cache response format'\n  }];\n}\n\nconst cachedData = cacheResponse.value;\nconst cacheTimestamp = new Date(cachedData.timestamp);\nconst now = new Date();\nconst age = now.getTime() - cacheTimestamp.getTime();\n\n// Check if cache entry is too old\nif (age > maxAge) {\n  return [{\n    cacheHit: false,\n    reason: 'Cache entry expired',\n    age: age,\n    maxAge: maxAge,\n    timestamp: cachedData.timestamp\n  }];\n}\n\n// Valid cache hit\nreturn [{\n  cacheHit: true,\n  data: cachedData.data,\n  type: cachedData.type,\n  timestamp: cachedData.timestamp,\n  age: age,\n  key: $('Parse Input').item.json.input.key,\n  source: 'cache'\n}];"
+      },
+      "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+      "name": "Process Cache Hit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "leftValue": "={{ $('Parse Input').item.json.input.fallbackToPattern }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Check Pattern Fallback",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate pattern-based cache key for LLM metadata\nconst inputKey = $('Parse Input').item.json.input.key;\nconst inputType = $('Parse Input').item.json.input.type;\n\n// For LLM metadata, try to find similar entries\nif (inputType === 'llm_metadata' && inputKey.includes(':')) {\n  const parts = inputKey.split(':');\n  if (parts.length >= 3) {\n    // Key format: llm:vehicleSig:nodeId:evidenceHash\n    // Try pattern: llm:vehicleSig:nodeId:*\n    const vehicleSig = parts[1];\n    const nodeId = parts[2];\n    const pattern = `llm:${vehicleSig}:${nodeId}:*`;\n    \n    return [{\n      patternKey: pattern,\n      originalKey: inputKey,\n      searchType: 'llm_metadata_pattern'\n    }];\n  }\n}\n\n// For research data, try vehicle signature patterns\nif (inputType === 'research' && inputKey.includes(':')) {\n  const parts = inputKey.split(':');\n  if (parts.length >= 2) {\n    // Key format: research:vehicleSig\n    // Try pattern: research:brand:model:*\n    const vehicleParts = parts[1].split(':');\n    if (vehicleParts.length >= 2) {\n      const pattern = `research:${vehicleParts[0]}:${vehicleParts[1]}:*`;\n      \n      return [{\n        patternKey: pattern,\n        originalKey: inputKey,\n        searchType: 'research_pattern'\n      }];\n    }\n  }\n}\n\n// No suitable pattern found\nreturn [{\n  patternKey: null,\n  originalKey: inputKey,\n  searchType: 'no_pattern'\n}];"
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Generate Pattern",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "leftValue": "={{ $('Generate Pattern').item.json.patternKey }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+      "name": "Check Pattern Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Parse Input'].json.INGEST_URL || 'http://ingest:3001' }}/cache/pattern/{{ encodeURIComponent($('Generate Pattern').item.json.patternKey) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Cache-Type",
+              "value": "pattern"
+            },
+            {
+              "name": "X-Original-Key",
+              "value": "={{ $('Generate Pattern').item.json.originalKey }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 2,
+            "waitBetween": 500
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+      "name": "Pattern Cache Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process pattern cache results\nconst patternResponse = $input.first().json;\nconst maxAge = $('Parse Input').item.json.input.maxAge;\nconst originalKey = $('Generate Pattern').item.json.originalKey;\n\nif (patternResponse.statusCode !== 200 || !patternResponse.body || !patternResponse.body.results) {\n  return [{\n    cacheHit: false,\n    reason: 'No pattern matches found',\n    originalKey: originalKey,\n    source: 'pattern_miss'\n  }];\n}\n\nconst results = patternResponse.body.results;\nif (!results || results.length === 0) {\n  return [{\n    cacheHit: false,\n    reason: 'Empty pattern results',\n    originalKey: originalKey,\n    source: 'pattern_empty'\n  }];\n}\n\n// Find the most recent valid entry\nlet bestMatch = null;\nlet bestScore = 0;\n\nfor (const result of results) {\n  if (!result.data || !result.timestamp) continue;\n  \n  const age = Date.now() - new Date(result.timestamp).getTime();\n  if (age > maxAge) continue;\n  \n  // Score based on recency and key similarity\n  const ageScore = 1 - (age / maxAge);\n  const keyScore = calculateKeySimilarity(originalKey, result.key);\n  const totalScore = (ageScore * 0.3) + (keyScore * 0.7);\n  \n  if (totalScore > bestScore) {\n    bestMatch = result;\n    bestScore = totalScore;\n  }\n}\n\nfunction calculateKeySimilarity(key1, key2) {\n  const parts1 = key1.split(':');\n  const parts2 = key2.split(':');\n  \n  let matches = 0;\n  const maxParts = Math.max(parts1.length, parts2.length);\n  \n  for (let i = 0; i < maxParts; i++) {\n    if (parts1[i] === parts2[i]) {\n      matches++;\n    }\n  }\n  \n  return matches / maxParts;\n}\n\nif (!bestMatch) {\n  return [{\n    cacheHit: false,\n    reason: 'No valid pattern matches',\n    originalKey: originalKey,\n    candidatesChecked: results.length,\n    source: 'pattern_no_valid'\n  }];\n}\n\n// Return best pattern match\nreturn [{\n  cacheHit: true,\n  data: bestMatch.data,\n  type: bestMatch.type,\n  timestamp: bestMatch.timestamp,\n  age: Date.now() - new Date(bestMatch.timestamp).getTime(),\n  key: originalKey,\n  matchedKey: bestMatch.key,\n  confidence: bestScore,\n  source: 'pattern_match',\n  candidatesChecked: results.length\n}];"
+      },
+      "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+      "name": "Process Pattern Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+              "name": "cacheHit",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+              "name": "reason",
+              "value": "Cache miss - key not found",
+              "type": "string"
+            },
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "key",
+              "value": "={{ $('Parse Input').item.json.input.key }}",
+              "type": "string"
+            },
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "name": "type",
+              "value": "={{ $('Parse Input').item.json.input.type }}",
+              "type": "string"
+            },
+            {
+              "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+              "name": "source",
+              "value": "cache_miss",
+              "type": "string"
+            },
+            {
+              "id": "y5z6a7b8-c9d0-1234-yzab-456789012345",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "z6a7b8c9-d0e1-2345-zabc-567890123456",
+      "name": "Cache Miss Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a7b8c9d0-e1f2-3456-abcd-678901234567",
+              "name": "cacheHit",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "b8c9d0e1-f2g3-4567-bcde-789012345678",
+              "name": "reason",
+              "value": "Invalid input - key is required",
+              "type": "string"
+            },
+            {
+              "id": "c9d0e1f2-g3h4-5678-cdef-890123456789",
+              "name": "error",
+              "value": "INVALID_INPUT",
+              "type": "string"
+            },
+            {
+              "id": "d0e1f2g3-h4i5-6789-defg-901234567890",
+              "name": "source",
+              "value": "input_error",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1f2g3h4-i5j6-7890-efgh-012345678901",
+      "name": "Input Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Cache Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Input Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Lookup": {
+      "main": [
+        [
+          {
+            "node": "Check Cache Hit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Cache Hit": {
+      "main": [
+        [
+          {
+            "node": "Process Cache Hit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Pattern Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Pattern Fallback": {
+      "main": [
+        [
+          {
+            "node": "Generate Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cache Miss Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Pattern": {
+      "main": [
+        [
+          {
+            "node": "Check Pattern Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Pattern Exists": {
+      "main": [
+        [
+          {
+            "node": "Pattern Cache Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cache Miss Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pattern Cache Lookup": {
+      "main": [
+        [
+          {
+            "node": "Process Pattern Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4d5e6f7g-8h9i-0123-4567-890123defghi",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cache-lookup-subflow"
+  },
+  "id": "cache-lookup-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:40:00.000Z",
+      "updatedAt": "2025-10-08T17:40:00.000Z",
+      "id": "caching",
+      "name": "caching"
+    }
+  ]
+}
