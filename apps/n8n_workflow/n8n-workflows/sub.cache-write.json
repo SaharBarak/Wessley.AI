@@ -1,0 +1,720 @@
+{
+  "name": "sub.cache-write",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+              "name": "input.key",
+              "value": "={{ $json.key }}",
+              "type": "string"
+            },
+            {
+              "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+              "name": "input.value",
+              "value": "={{ $json.value }}",
+              "type": "object"
+            },
+            {
+              "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+              "name": "input.type",
+              "value": "={{ $json.type || 'default' }}",
+              "type": "string"
+            },
+            {
+              "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+              "name": "input.ttl",
+              "value": "={{ $json.ttl || null }}",
+              "type": "number"
+            },
+            {
+              "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+              "name": "input.overwrite",
+              "value": "={{ $json.overwrite || true }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+              "leftValue": "={{ $('Parse Input').item.json.input.key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "leftValue": "={{ $('Parse Input').item.json.input.value }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "leftValue": "={{ $('Parse Input').item.json.input.overwrite }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+      "name": "Check Overwrite Policy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Parse Input'].json.INGEST_URL || 'http://ingest:3001' }}/cache/{{ encodeURIComponent($('Parse Input').item.json.input.key) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 2,
+            "waitBetween": 500
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+      "name": "Check Existing Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+              "leftValue": "={{ $('Check Existing Cache').item.json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Check Cache Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "name": "cacheWritten",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+              "name": "reason",
+              "value": "Cache entry exists and overwrite is disabled",
+              "type": "string"
+            },
+            {
+              "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+              "name": "key",
+              "value": "={{ $('Parse Input').item.json.input.key }}",
+              "type": "string"
+            },
+            {
+              "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+              "name": "action",
+              "value": "skipped",
+              "type": "string"
+            },
+            {
+              "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+              "name": "existingValue",
+              "value": "={{ $('Check Existing Cache').item.json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+      "name": "Cache Exists Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1560, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare cache write payload with validation\nconst input = $('Parse Input').item.json.input;\nconst { key, value, type, ttl } = input;\n\n// Validate cache value size (Redis limit is 512MB, but we'll be conservative)\nconst valueString = JSON.stringify(value);\nconst sizeBytes = Buffer.byteLength(valueString, 'utf8');\nconst maxSizeBytes = 10 * 1024 * 1024; // 10MB limit\n\nif (sizeBytes > maxSizeBytes) {\n  return [{\n    error: 'VALUE_TOO_LARGE',\n    message: `Cache value too large: ${sizeBytes} bytes (max: ${maxSizeBytes})`,\n    key: key,\n    size: sizeBytes\n  }];\n}\n\n// Validate cache key length\nif (key.length > 200) {\n  return [{\n    error: 'KEY_TOO_LONG',\n    message: `Cache key too long: ${key.length} characters (max: 200)`,\n    key: key\n  }];\n}\n\n// Determine TTL based on type\nconst ttlConfig = {\n  'llm_metadata': 86400, // 24 hours\n  'research': 604800,    // 7 days  \n  'vehicle_sig': 2592000, // 30 days\n  'default': 3600        // 1 hour\n};\n\nconst finalTTL = ttl || ttlConfig[type] || ttlConfig.default;\n\n// Build cache payload\nconst cachePayload = {\n  value: value,\n  ttl: finalTTL\n};\n\n// Add metadata for tracking\nconst metadata = {\n  key: key,\n  type: type,\n  size: sizeBytes,\n  ttl: finalTTL,\n  timestamp: new Date().toISOString(),\n  payload: cachePayload\n};\n\nreturn [metadata];"
+      },
+      "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+      "name": "Prepare Cache Write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "leftValue": "={{ $('Prepare Cache Write').item.json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+      "name": "Check Validation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Parse Input'].json.INGEST_URL || 'http://ingest:3001' }}/cache/{{ encodeURIComponent($('Prepare Cache Write').item.json.key) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "requestMethod": "PUT",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Cache-Type",
+              "value": "={{ $('Prepare Cache Write').item.json.type }}"
+            },
+            {
+              "name": "X-Cache-Size",
+              "value": "={{ $('Prepare Cache Write').item.json.size }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "value",
+              "value": "={{ $('Prepare Cache Write').item.json.payload.value }}"
+            },
+            {
+              "name": "ttl",
+              "value": "={{ $('Prepare Cache Write').item.json.payload.ttl }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3,
+            "waitBetween": 1000
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "y5z6a7b8-c9d0-1234-yzab-456789012345",
+      "name": "Write to Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "z6a7b8c9-d0e1-2345-zabc-567890123456",
+              "leftValue": "={{ $('Write to Cache').item.json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "between",
+                "rightValue2": 299
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-678901234567",
+      "name": "Check Write Result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b8c9d0e1-f2g3-4567-bcde-789012345678",
+              "name": "cacheWritten",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "c9d0e1f2-g3h4-5678-cdef-890123456789",
+              "name": "key",
+              "value": "={{ $('Prepare Cache Write').item.json.key }}",
+              "type": "string"
+            },
+            {
+              "id": "d0e1f2g3-h4i5-6789-defg-901234567890",
+              "name": "type",
+              "value": "={{ $('Prepare Cache Write').item.json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "e1f2g3h4-i5j6-7890-efgh-012345678901",
+              "name": "size",
+              "value": "={{ $('Prepare Cache Write').item.json.size }}",
+              "type": "number"
+            },
+            {
+              "id": "f2g3h4i5-j6k7-8901-fghi-123456789012",
+              "name": "ttl",
+              "value": "={{ $('Prepare Cache Write').item.json.ttl }}",
+              "type": "number"
+            },
+            {
+              "id": "g3h4i5j6-k7l8-9012-ghij-234567890123",
+              "name": "action",
+              "value": "written",
+              "type": "string"
+            },
+            {
+              "id": "h4i5j6k7-l8m9-0123-hijk-345678901234",
+              "name": "timestamp",
+              "value": "={{ $('Prepare Cache Write').item.json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "i5j6k7l8-m9n0-1234-ijkl-456789012345",
+              "name": "message",
+              "value": "Cache entry written successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "j6k7l8m9-n0o1-2345-jklm-567890123456",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2440, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "k7l8m9n0-o1p2-3456-klmn-678901234567",
+              "name": "cacheWritten",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "l8m9n0o1-p2q3-4567-lmno-789012345678",
+              "name": "key",
+              "value": "={{ $('Prepare Cache Write').item.json.key }}",
+              "type": "string"
+            },
+            {
+              "id": "m9n0o1p2-q3r4-5678-mnop-890123456789",
+              "name": "error",
+              "value": "CACHE_WRITE_FAILED",
+              "type": "string"
+            },
+            {
+              "id": "n0o1p2q3-r4s5-6789-nopq-901234567890",
+              "name": "message",
+              "value": "={{ 'Failed to write cache: ' + ($('Write to Cache').item.json.statusCode || 'unknown error') }}",
+              "type": "string"
+            },
+            {
+              "id": "o1p2q3r4-s5t6-7890-opqr-012345678901",
+              "name": "action",
+              "value": "failed",
+              "type": "string"
+            },
+            {
+              "id": "p2q3r4s5-t6u7-8901-pqrs-123456789012",
+              "name": "statusCode",
+              "value": "={{ $('Write to Cache').item.json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "q3r4s5t6-u7v8-9012-qrst-234567890123",
+              "name": "details",
+              "value": "={{ $('Write to Cache').item.json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "r4s5t6u7-v8w9-0123-rstu-345678901234",
+      "name": "Write Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s5t6u7v8-w9x0-1234-stuv-456789012345",
+              "name": "cacheWritten",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "t6u7v8w9-x0y1-2345-tuvw-567890123456",
+              "name": "error",
+              "value": "={{ $('Prepare Cache Write').item.json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "u7v8w9x0-y1z2-3456-uvwx-678901234567",
+              "name": "message",
+              "value": "={{ $('Prepare Cache Write').item.json.message }}",
+              "type": "string"
+            },
+            {
+              "id": "v8w9x0y1-z2a3-4567-vwxy-789012345678",
+              "name": "key",
+              "value": "={{ $('Parse Input').item.json.input.key }}",
+              "type": "string"
+            },
+            {
+              "id": "w9x0y1z2-a3b4-5678-wxyz-890123456789",
+              "name": "action",
+              "value": "validation_failed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "x0y1z2a3-b4c5-6789-xyza-901234567890",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2000, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "y1z2a3b4-c5d6-7890-yzab-012345678901",
+              "name": "cacheWritten",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "z2a3b4c5-d6e7-8901-zabc-123456789012",
+              "name": "error",
+              "value": "INVALID_INPUT",
+              "type": "string"
+            },
+            {
+              "id": "a3b4c5d6-e7f8-9012-abcd-234567890123",
+              "name": "message",
+              "value": "Invalid input: key and value are required",
+              "type": "string"
+            },
+            {
+              "id": "b4c5d6e7-f8g9-0123-bcde-345678901234",
+              "name": "action",
+              "value": "input_error",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c5d6e7f8-g9h0-1234-cdef-456789012345",
+      "name": "Input Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 500]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Check Overwrite Policy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Input Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Overwrite Policy": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Cache Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Cache": {
+      "main": [
+        [
+          {
+            "node": "Check Cache Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Cache Exists": {
+      "main": [
+        [
+          {
+            "node": "Cache Exists Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Cache Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Cache Write": {
+      "main": [
+        [
+          {
+            "node": "Check Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation": {
+      "main": [
+        [
+          {
+            "node": "Write to Cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Cache": {
+      "main": [
+        [
+          {
+            "node": "Check Write Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Write Result": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5e6f7g8h-9i0j-1234-5678-901234efghij",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cache-write-subflow"
+  },
+  "id": "cache-write-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:40:00.000Z",
+      "updatedAt": "2025-10-08T17:40:00.000Z",
+      "id": "caching",
+      "name": "caching"
+    }
+  ]
+}
