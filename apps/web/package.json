@@ -1,5 +1,5 @@
 {
-  "name": "@fusebox/web",
+  "name": "@wessley/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,7 +14,7 @@
     "react-dom": "^18.2.0",
     "next": "^14.0.0",
     "zustand": "^4.4.0",
-    "@fusebox/types": "*",
+    "@wessley/types": "*",
     "mermaid": "^10.6.0",
     "lucide-react": "^0.290.0",
     "ai": "^3.4.0",

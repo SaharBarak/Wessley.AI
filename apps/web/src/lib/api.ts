@@ -1,4 +1,4 @@
-import type { ApiResponse, AnalysisResponse, ChatMessage } from '@fusebox/types'
+import type { ApiResponse, AnalysisResponse, ChatMessage } from '@wessley/types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 

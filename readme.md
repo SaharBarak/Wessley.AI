@@ -1,4 +1,4 @@
-# 🧰 Fusebox.ai
+# 🧰 Wessley.ai
 
 AI-powered web app for reverse engineering vehicle electrical systems using photos.
 
@@ -33,8 +33,8 @@ AI-powered web app for reverse engineering vehicle electrical systems using phot
 ### 1. Clone and install:
 
 ```bash
-git clone git@github.com:fusebox-ai/fusebox.git
-cd fusebox
+git clone git@github.com:wessley-ai/wessley.git
+cd wessley
 pnpm install  # uses workspaces
 ```
 

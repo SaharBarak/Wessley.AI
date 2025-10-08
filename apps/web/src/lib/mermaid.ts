@@ -1,4 +1,4 @@
-import type { Component, MermaidDiagram } from '@fusebox/types'
+import type { Component, MermaidDiagram } from '@wessley/types'
 
 export class MermaidService {
   private static instance: MermaidService

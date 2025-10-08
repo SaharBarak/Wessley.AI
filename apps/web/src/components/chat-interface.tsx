@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Send, MessageCircle, X, Trash2, Bot, User } from 'lucide-react'
 import { useChat } from 'ai/react'
 import { useAnalysisStore } from '@/stores/analysis'
-import type { Component } from '@fusebox/types'
+import type { Component } from '@wessley/types'
 
 interface ChatInterfaceProps {
   className?: string

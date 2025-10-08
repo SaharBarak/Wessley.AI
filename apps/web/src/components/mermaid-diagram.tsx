@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ZoomIn, ZoomOut, RotateCcw, Download, Maximize2 } from 'lucide-react'
-import type { MermaidDiagram, Component } from '@fusebox/types'
+import type { MermaidDiagram, Component } from '@wessley/types'
 
 interface MermaidDiagramProps {
   diagram: MermaidDiagram

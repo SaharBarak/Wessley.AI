@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import multer from 'multer'
 import { OpenAIService } from '../services/openai'
-import type { ApiResponse, AnalysisResponse } from '@fusebox/types'
+import type { ApiResponse, AnalysisResponse } from '@wessley/types'
 
 const router = Router()
 const openaiService = OpenAIService.getInstance()

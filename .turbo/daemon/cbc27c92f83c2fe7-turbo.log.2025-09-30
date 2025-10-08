@@ -1,0 +1,32 @@
+2025-09-30T17:00:09.157332Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/.turbo-cookie")}
+2025-09-30T17:00:09.157363Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:00:09.256472Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/1.cookie")}
+2025-09-30T17:00:09.256485Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:11:55.683954Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".env.example")}
+2025-09-30T17:11:55.683987Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:11:55.884757Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".env.example")}
+2025-09-30T17:11:55.884776Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:18:24.792414Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".env.example")}
+2025-09-30T17:18:24.792487Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:18:58.891874Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".env.example")}
+2025-09-30T17:18:58.891884Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:19:42.192976Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/services/openai.ts"), AnchoredSystemPathBuf("apps/api/src/services/openai.ts.tmp.57229.1759252782156")}
+2025-09-30T17:19:42.193000Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:19:48.493051Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/services/openai.ts.tmp.57229.1759252788392"), AnchoredSystemPathBuf("apps/api/src/services/openai.ts")}
+2025-09-30T17:19:48.493065Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:19:55.594449Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/services/openai.ts.tmp.57229.1759252795575")}
+2025-09-30T17:19:55.594469Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:19:55.693844Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/services/openai.ts.tmp.57229.1759252795575"), AnchoredSystemPathBuf("apps/api/src/services/openai.ts")}
+2025-09-30T17:19:55.693856Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:19:55.693879Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-09-30T17:26:22.932935Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/2.cookie")}
+2025-09-30T17:26:22.932947Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:27:32.033857Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/3.cookie")}
+2025-09-30T17:27:32.033869Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-30T17:28:39.236410Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/index.ts.tmp.57229.1759253319220")}
+2025-09-30T17:28:39.236441Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:28:39.336620Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/index.ts.tmp.57229.1759253319220"), AnchoredSystemPathBuf("apps/api/src/index.ts")}
+2025-09-30T17:28:39.336632Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@fusebox/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-09-30T17:28:39.336649Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-09-30T17:29:38.537636Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/4.cookie")}
+2025-09-30T17:29:38.537649Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))

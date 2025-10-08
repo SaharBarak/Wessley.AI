@@ -1,8 +1,8 @@
-# CLAUDE.md – Fusebox.ai
+# CLAUDE.md – Wessley.ai
 
 ## 📦 Project Overview
 
-You are Claude Code operating inside the `fusebox.ai` monorepo.
+You are Claude Code operating inside the `wessley.ai` monorepo.
 Your job is to build a webapp that:
 
 * Accepts vehicle photos (engine bay, fusebox, dashboard)

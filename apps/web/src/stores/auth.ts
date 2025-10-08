@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const mockUser: User = {
       id: '1',
       name: 'Demo User',
-      email: 'demo@fusebox.ai',
+      email: 'demo@wessley.ai',
       picture: undefined
     }
     

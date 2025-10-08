@@ -1,13 +1,9 @@
 import OpenAI from 'openai'
-import type { Component, AnalysisResponse } from '@fusebox/types'
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+import type { Component, AnalysisResponse } from '@wessley/types'
 
 export class OpenAIService {
   private static instance: OpenAIService
+  private openai: OpenAI | null = null
   
   public static getInstance(): OpenAIService {
     if (!OpenAIService.instance) {
@@ -19,6 +15,10 @@ export class OpenAIService {
   private constructor() {
     if (!process.env.OPENAI_API_KEY) {
       console.warn('⚠️  OPENAI_API_KEY not found. Analysis will use mock data.')
+    } else {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      })
     }
   }
 
@@ -27,14 +27,14 @@ export class OpenAIService {
    */
   async analyzeVehicleImage(imageUrl: string, imageId: string): Promise<AnalysisResponse> {
     try {
-      if (!process.env.OPENAI_API_KEY) {
+      if (!this.openai) {
         // Return mock data when API key is not configured
         return this.getMockAnalysis(imageId)
       }
 
       const prompt = this.buildAnalysisPrompt()
       
-      const response = await openai.chat.completions.create({
+      const response = await this.openai.chat.completions.create({
         model: "gpt-4-vision-preview",
         messages: [
           {

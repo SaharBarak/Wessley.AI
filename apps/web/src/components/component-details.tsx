@@ -1,7 +1,7 @@
 'use client'
 
 import { X, Zap, Cable, Info } from 'lucide-react'
-import type { Component } from '@fusebox/types'
+import type { Component } from '@wessley/types'
 
 interface ComponentDetailsProps {
   component: Component | null

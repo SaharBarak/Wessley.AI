@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { OpenAIService } from '../services/openai'
-import type { ApiResponse, ChatMessage, Component } from '@fusebox/types'
+import type { ApiResponse, ChatMessage, Component } from '@wessley/types'
 
 const router = Router()
 const openaiService = OpenAIService.getInstance()

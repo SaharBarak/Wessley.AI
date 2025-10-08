@@ -1,4 +1,4 @@
-import type { Component, AnalysisResponse } from '@fusebox/types'
+import type { Component, AnalysisResponse } from '@wessley/types'
 
 export const mockComponents: Component[] = [
   {

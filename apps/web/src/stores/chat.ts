@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage, Component } from '@fusebox/types'
+import type { ChatMessage, Component } from '@wessley/types'
 import { apiService } from '@/lib/api'
 
 interface ChatState {

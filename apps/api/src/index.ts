@@ -4,8 +4,8 @@ import dotenv from 'dotenv'
 import analysisRoutes from './routes/analysis'
 import chatRoutes from './routes/chat'
 
-// Load environment variables
-dotenv.config()
+// Load environment variables from root .env file
+dotenv.config({ path: '../../.env' })
 
 const app = express()
 const PORT = process.env.PORT || 3001

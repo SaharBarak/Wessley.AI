@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai'
 import { streamText, convertToCoreMessages } from 'ai'
-import type { Component } from '@fusebox/types'
+import type { Component } from '@wessley/types'
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30

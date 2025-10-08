@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Component, AnalysisResponse, MermaidDiagram } from '@fusebox/types'
+import type { Component, AnalysisResponse, MermaidDiagram } from '@wessley/types'
 import { apiService } from '@/lib/api'
 import { MermaidService } from '@/lib/mermaid'
 
