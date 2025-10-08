@@ -1,0 +1,30 @@
+{
+  "name": "n8n-pipeline-tests",
+  "version": "1.0.0",
+  "description": "Test suite for n8n electrical pipeline schemas and workflows",
+  "main": "schema-validation-suite.js",
+  "scripts": {
+    "test": "node schema-validation-suite.js",
+    "test:schemas": "node schema-validation-suite.js",
+    "test:watch": "nodemon schema-validation-suite.js",
+    "validate": "node -e \"require('./schema-validation-suite').runTests()\""
+  },
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "n8n",
+    "schema",
+    "validation",
+    "testing",
+    "electrical",
+    "pipeline"
+  ],
+  "author": "Wessley.ai",
+  "license": "MIT"
+}
