@@ -1,0 +1,319 @@
+{
+  "name": "sub.ajv-validate",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "83f4a8c1-0c1d-4c8a-9f7a-1d8c4b5e6f7a",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "input.schemaName",
+              "value": "={{ $json.schemaName }}",
+              "type": "string"
+            },
+            {
+              "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+              "name": "input.data",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            },
+            {
+              "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+              "name": "input.strict",
+              "value": "={{ $json.strict ?? true }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+              "leftValue": "={{ $('Parse Input').item.json.input.schemaName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+              "leftValue": "={{ $('Parse Input').item.json.input.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Load required modules and schema\nconst Ajv = require('ajv');\nconst addFormats = require('ajv-formats');\nconst fs = require('fs');\nconst path = require('path');\n\n// Initialize AJV with strict mode\nconst ajv = new Ajv({\n  strict: $input.first().json.input.strict,\n  allErrors: true,\n  verbose: true,\n  validateFormats: true,\n  addUsedSchema: false\n});\n\n// Add format validators\naddFormats(ajv);\n\n// Load schema\nconst schemaName = $input.first().json.input.schemaName;\nconst schemaPath = `/data/schemas/${schemaName}.schema.json`;\n\nif (!fs.existsSync(schemaPath)) {\n  throw new Error(`Schema file not found: ${schemaPath}`);\n}\n\nconst schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));\nconst data = $input.first().json.input.data;\n\n// Compile and validate\ntry {\n  const validate = ajv.compile(schema);\n  const valid = validate(data);\n  \n  const result = {\n    valid: valid,\n    schemaName: schemaName,\n    schemaId: schema.$id || schemaName,\n    data: data,\n    timestamp: new Date().toISOString()\n  };\n  \n  if (!valid) {\n    result.errors = validate.errors.map(error => ({\n      instancePath: error.instancePath,\n      schemaPath: error.schemaPath,\n      keyword: error.keyword,\n      params: error.params,\n      message: error.message,\n      data: error.data\n    }));\n    \n    result.errorSummary = {\n      count: validate.errors.length,\n      keywords: [...new Set(validate.errors.map(e => e.keyword))],\n      paths: [...new Set(validate.errors.map(e => e.instancePath))]\n    };\n  }\n  \n  return [result];\n  \n} catch (compileError) {\n  throw new Error(`Schema compilation failed: ${compileError.message}`);\n}"
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "AJV Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "leftValue": "={{ $('AJV Validate').item.json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Check Validation Result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "name": "validationResult",
+              "value": "={{ $('AJV Validate').item.json }}",
+              "type": "object"
+            },
+            {
+              "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "name": "message",
+              "value": "Validation successful",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+              "name": "validationResult",
+              "value": "={{ $('AJV Validate').item.json }}",
+              "type": "object"
+            },
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+              "name": "message",
+              "value": "={{ 'Validation failed: ' + $('AJV Validate').item.json.errorSummary.count + ' errors' }}",
+              "type": "string"
+            },
+            {
+              "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+              "name": "errors",
+              "value": "={{ $('AJV Validate').item.json.errors }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+              "name": "validationResult",
+              "value": "={{ null }}",
+              "type": "object"
+            },
+            {
+              "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "message",
+              "value": "Invalid input: schemaName and data are required",
+              "type": "string"
+            },
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "name": "error",
+              "value": "INVALID_INPUT",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+      "name": "Input Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "AJV Validate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Input Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AJV Validate": {
+      "main": [
+        [
+          {
+            "node": "Check Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation Result": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1a2b3c4d-5e6f-7890-1234-567890abcdef",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ajv-validate-subflow"
+  },
+  "id": "ajv-validate-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:26:00.000Z",
+      "updatedAt": "2025-10-08T17:26:00.000Z",
+      "id": "validation",
+      "name": "validation"
+    }
+  ]
+}
