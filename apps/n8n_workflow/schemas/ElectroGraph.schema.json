@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ElectroGraph@1",
+  "title": "Canonical Electrical Graph", 
+  "description": "Normalized representation of vehicle electrical system",
+  "type": "object",
+  "required": ["vehicleId", "nodes", "edges"],
+  "properties": {
+    "vehicleId": {
+      "type": "string",
+      "description": "Vehicle identifier (brand:model:year)"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "brand": {"type": "string"},
+        "model": {"type": "string"},
+        "year": {"type": "integer"},
+        "trim": {"type": "string"},
+        "market": {"type": "string"},
+        "generated": {"type": "string", "format": "date-time"}
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object", 
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Unique node identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["battery", "fuse", "relay", "connector", "ecu", "sensor", "actuator", "lamp", "motor", "splice", "ground", "terminal"],
+            "description": "Component type"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable label"
+          },
+          "zone": {
+            "type": "string",
+            "enum": ["engine", "dash", "interior", "trunk", "exterior", "underhood", "undercar"],
+            "description": "Physical location zone"
+          },
+          "circuits": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Circuit IDs this node participates in"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "rating": {"type": "string"},
+              "voltage": {"type": "string"}, 
+              "current": {"type": "string"},
+              "pins": {"type": "integer"},
+              "partNumber": {"type": "string"},
+              "manufacturer": {"type": "string"}
+            }
+          }
+        }
+      },
+      "minItems": 1,
+      "description": "Graph nodes (electrical components)"
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "to"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique edge identifier"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source node ID"
+          },
+          "to": {
+            "type": "string", 
+            "description": "Target node ID"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["power", "ground", "signal", "data"],
+            "default": "power",
+            "description": "Connection type"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "wireGauge": {"type": "string"},
+              "wireColor": {"type": "string"},
+              "length": {"type": "number"},
+              "resistance": {"type": "number"},
+              "shielded": {"type": "boolean"},
+              "twisted": {"type": "boolean"}
+            }
+          },
+          "circuit": {
+            "type": "string",
+            "description": "Circuit ID this edge belongs to"
+          }
+        }
+      },
+      "description": "Graph edges (electrical connections)"
+    },
+    "circuits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "nodes"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Circuit identifier"
+          },
+          "label": {
+            "type": "string",
+            "description": "Circuit name/function"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 2,
+            "description": "Node IDs in this circuit"
+          },
+          "voltage": {"type": "string"},
+          "protection": {"type": "string"},
+          "function": {"type": "string"},
+          "always_on": {"type": "boolean"},
+          "load_type": {
+            "type": "string",
+            "enum": ["resistive", "inductive", "capacitive", "electronic"]
+          }
+        }
+      },
+      "description": "Electrical circuits grouping nodes and edges"
+    }
+  }
+}

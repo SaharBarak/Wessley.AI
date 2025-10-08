@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "Manifest@1",
+  "title": "Viewer Manifest", 
+  "description": "Minimal manifest for 3D viewer with component metadata",
+  "type": "object",
+  "required": ["jobId", "vehicleId", "glbUrl", "components", "circuits"],
+  "properties": {
+    "jobId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Pipeline job identifier"
+    },
+    "vehicleId": {
+      "type": "string", 
+      "description": "Vehicle identifier (brand:model:year)"
+    },
+    "glbUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to GLB model file"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "brand": {"type": "string"},
+        "model": {"type": "string"},
+        "year": {"type": "integer"},
+        "generated": {"type": "string", "format": "date-time"},
+        "version": {"type": "string"},
+        "pipeline": {"type": "string"}
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Component identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["battery", "fuse", "relay", "connector", "ecu", "sensor", "actuator", "lamp", "motor", "splice", "ground", "terminal"]
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label"
+          },
+          "description": {
+            "type": "string",
+            "description": "Component description"
+          },
+          "zone": {
+            "type": "string",
+            "description": "Physical location"
+          },
+          "circuits": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Circuit IDs this component belongs to"
+          },
+          "specifications": {
+            "type": "object",
+            "properties": {
+              "voltage": {"type": "string"},
+              "current": {"type": "string"},
+              "power": {"type": "string"},
+              "pins": {"type": "integer"}
+            }
+          },
+          "interactive": {
+            "type": "object",
+            "properties": {
+              "meshName": {
+                "type": "string",
+                "description": "Three.js mesh name for selection"
+              },
+              "tooltip": {
+                "type": "string",
+                "description": "Tooltip text on hover"
+              },
+              "clickable": {
+                "type": "boolean",
+                "default": true
+              },
+              "highlightColor": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              }
+            }
+          }
+        }
+      },
+      "description": "Interactive component definitions"
+    },
+    "circuits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "components"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Circuit identifier"
+          },
+          "label": {
+            "type": "string",
+            "description": "Circuit display name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Circuit function description"
+          },
+          "components": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Component IDs in this circuit"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Circuit theme color"
+          },
+          "voltage": {"type": "string"},
+          "protection": {"type": "string"},
+          "interactive": {
+            "type": "object",
+            "properties": {
+              "groupName": {
+                "type": "string",
+                "description": "Three.js group name"
+              },
+              "traceable": {
+                "type": "boolean",
+                "default": true,
+                "description": "Whether circuit can be traced"
+              },
+              "isolatable": {
+                "type": "boolean", 
+                "default": true,
+                "description": "Whether circuit can be isolated/highlighted"
+              }
+            }
+          }
+        }
+      },
+      "description": "Circuit definitions for viewer"
+    },
+    "interactions": {
+      "type": "object",
+      "properties": {
+        "defaultView": {
+          "type": "object",
+          "properties": {
+            "camera": {
+              "type": "object",
+              "properties": {
+                "position": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+                "target": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3}
+              }
+            },
+            "visible": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Initially visible circuit/component IDs"
+            }
+          }
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "label": {"type": "string"},
+              "description": {"type": "string"},
+              "filter": {
+                "type": "object",
+                "properties": {
+                  "circuits": {"type": "array", "items": {"type": "string"}},
+                  "components": {"type": "array", "items": {"type": "string"}},
+                  "zones": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            }
+          },
+          "description": "Predefined interaction modes"
+        }
+      }
+    }
+  }
+}
