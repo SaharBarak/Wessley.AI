@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ViewerEvent@1",
+  "title": "Viewer Event",
+  "description": "Telemetry events from 3D viewer interactions",
+  "type": "object",
+  "required": ["eventId", "sessionId", "timestamp", "eventType"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier"
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "User session identifier"
+    },
+    "userId": {
+      "type": "string",
+      "description": "User identifier (optional)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When event occurred"
+    },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "viewer_load",
+        "model_load",
+        "component_hover",
+        "component_click", 
+        "circuit_trace",
+        "circuit_isolate",
+        "camera_move",
+        "zoom",
+        "mode_switch",
+        "search",
+        "export",
+        "error"
+      ],
+      "description": "Type of viewer interaction"
+    },
+    "vehicleId": {
+      "type": "string",
+      "description": "Vehicle being viewed"
+    },
+    "jobId": {
+      "type": "string",
+      "description": "Pipeline job that generated the model"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data",
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "description": "Component involved in interaction"
+        },
+        "circuitId": {
+          "type": "string", 
+          "description": "Circuit involved in interaction"
+        },
+        "position": {
+          "type": "array",
+          "items": {"type": "number"},
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "3D position where event occurred"
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "position": {"type": "array", "items": {"type": "number"}},
+            "target": {"type": "array", "items": {"type": "number"}},
+            "zoom": {"type": "number"}
+          }
+        },
+        "duration": {
+          "type": "number",
+          "description": "Event duration in milliseconds"
+        },
+        "searchQuery": {
+          "type": "string",
+          "description": "Search terms for search events"
+        },
+        "exportFormat": {
+          "type": "string",
+          "enum": ["pdf", "png", "jpg", "gltf"],
+          "description": "Export format for export events"
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "message": {"type": "string"},
+            "code": {"type": "string"},
+            "stack": {"type": "string"}
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "userAgent": {"type": "string"},
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width": {"type": "integer"},
+            "height": {"type": "integer"}
+          }
+        },
+        "performance": {
+          "type": "object",
+          "properties": {
+            "fps": {"type": "number"},
+            "memory": {"type": "number"},
+            "loadTime": {"type": "number"}
+          }
+        },
+        "version": {"type": "string"}
+      }
+    }
+  }
+}
