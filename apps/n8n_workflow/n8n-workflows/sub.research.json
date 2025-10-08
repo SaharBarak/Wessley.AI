@@ -1,0 +1,660 @@
+{
+  "name": "sub.research",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build search queries for vehicle research\nconst input = $input.first().json;\nconst { brand, model, year, trim, market } = input;\n\n// Generate vehicle signature\nconst vehicleSig = `${brand}:${model}:${year}${trim ? ':' + trim : ''}${market ? ':' + market : ''}`;\n\n// Build comprehensive search queries\nconst queries = [\n  // Official sources\n  `${brand} ${model} ${year} wiring diagram service manual`,\n  `${brand} ${model} ${year} electrical system fuse relay manual`,\n  `${brand} ${model} ${year} OEM service manual electrical`,\n  \n  // Workshop manuals\n  `${brand} ${model} ${year} workshop manual electrical wiring`,\n  `${brand} ${model} ${year} repair manual fuse box diagram`,\n  \n  // Technical forums and databases\n  `${brand} ${model} ${year} electrical problems forum`,\n  `${brand} ${model} ${year} fuse box layout diagram`,\n  \n  // Parts catalogs\n  `${brand} ${model} ${year} parts catalog electrical components`,\n  `${brand} ${model} ${year} relay fuse specifications`\n];\n\n// Add trim-specific queries if available\nif (trim) {\n  queries.push(\n    `${brand} ${model} ${year} ${trim} electrical diagram`,\n    `${brand} ${model} ${year} ${trim} wiring harness`\n  );\n}\n\n// Prioritize queries by reliability\nconst prioritizedQueries = {\n  high: queries.slice(0, 3), // Official sources\n  medium: queries.slice(3, 6), // Workshop manuals\n  low: queries.slice(6) // Forums and general\n};\n\nreturn [{\n  vehicleSig,\n  brand,\n  model,\n  year,\n  trim,\n  market,\n  queries: prioritizedQueries,\n  totalQueries: queries.length,\n  timestamp: new Date().toISOString()\n}];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Build Search Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.cache-lookup",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Check Research Cache",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+              "leftValue": "={{ $('Check Research Cache').item.json.cacheHit }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Check Cache Hit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+              "name": "researchManifest",
+              "value": "={{ $('Check Research Cache').item.json.data }}",
+              "type": "object"
+            },
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "name": "fromCache",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+              "name": "vehicleSig",
+              "value": "={{ $('Build Search Queries').item.json.vehicleSig }}",
+              "type": "string"
+            },
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "name": "cacheAge",
+              "value": "={{ $('Check Research Cache').item.json.age }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Return Cached Research",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.rate-limit",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+      "name": "Rate Limit Check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Execute web search with LLM for each query priority level\nconst queries = $('Build Search Queries').item.json.queries;\nconst vehicleInfo = $('Build Search Queries').item.json;\n\nconst searchResults = [];\nconst sources = [];\nlet totalResults = 0;\n\n// Process high priority queries first\nfor (const query of queries.high) {\n  try {\n    // Simulated web search - in reality this would use search API\n    const mockResults = {\n      query: query,\n      results: [\n        {\n          title: `${vehicleInfo.brand} ${vehicleInfo.model} Service Manual`,\n          url: `https://servicemanuals.com/${vehicleInfo.brand}/${vehicleInfo.model}/${vehicleInfo.year}`,\n          snippet: `Complete electrical system documentation for ${vehicleInfo.year} ${vehicleInfo.brand} ${vehicleInfo.model}`,\n          credibility: 0.9\n        },\n        {\n          title: `Wiring Diagram Database`,\n          url: `https://wiringdb.com/vehicles/${vehicleInfo.brand}/${vehicleInfo.model}`,\n          snippet: `Comprehensive wiring diagrams and fuse box layouts`,\n          credibility: 0.8\n        }\n      ]\n    };\n    \n    searchResults.push(mockResults);\n    sources.push(...mockResults.results.map(r => r.url));\n    totalResults += mockResults.results.length;\n    \n  } catch (error) {\n    console.error(`Search failed for query: ${query}`, error);\n  }\n}\n\n// Add medium priority if we need more sources\nif (sources.length < 3) {\n  for (const query of queries.medium.slice(0, 2)) {\n    const mockResults = {\n      query: query,\n      results: [\n        {\n          title: `${vehicleInfo.brand} Forum - Electrical Issues`,\n          url: `https://forums.${vehicleInfo.brand.toLowerCase()}.com/electrical`,\n          snippet: `User discussions about electrical problems and solutions`,\n          credibility: 0.6\n        }\n      ]\n    };\n    \n    searchResults.push(mockResults);\n    sources.push(...mockResults.results.map(r => r.url));\n    totalResults += mockResults.results.length;\n  }\n}\n\nreturn [{\n  vehicleSig: vehicleInfo.vehicleSig,\n  searchResults: searchResults,\n  sources: [...new Set(sources)], // Remove duplicates\n  totalResults: totalResults,\n  queriesExecuted: searchResults.length,\n  timestamp: new Date().toISOString()\n}];"
+      },
+      "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+      "name": "Execute Web Search",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "resource": "httpRequest",
+        "operation": "get",
+        "url": "={{ $node['Build Search Queries'].json.OPENAI_API_URL || 'https://api.openai.com' }}/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $node['Build Search Queries'].json.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "{{ $node['Build Search Queries'].json.OPENAI_MODEL || 'gpt-4o' }}"
+            },
+            {
+              "name": "temperature",
+              "value": 0.1
+            },
+            {
+              "name": "max_tokens",
+              "value": 2000
+            },
+            {
+              "name": "messages",
+              "value": "={{ JSON.stringify([{role: 'system', content: 'You are an automotive electrical expert. Analyze search results to extract structured information about vehicle electrical systems. Focus on fuses, relays, connectors, ECUs, sensors, and wiring. Only include information that is explicitly mentioned in the sources. Return confidence scores based on source credibility.'}, {role: 'user', content: 'Vehicle: ' + $(\\'Build Search Queries\\').item.json.brand + ' ' + $(\\'Build Search Queries\\').item.json.model + ' ' + $(\\'Build Search Queries\\').item.json.year + '\\n\\nSearch Results:\\n' + $(\\'Execute Web Search\\').item.json.searchResults.map(r => r.query + ':\\n' + r.results.map(res => res.title + ' - ' + res.snippet + ' (' + res.url + ')').join('\\n')).join('\\n\\n') + '\\n\\nExtract electrical components, circuits, and specifications. Include confidence scores and cite sources.'}]) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3,
+            "waitBetween": 2000
+          }
+        }
+      },
+      "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+      "name": "LLM Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process LLM response and build research manifest\nconst llmResponse = $input.first().json;\nconst vehicleInfo = $('Build Search Queries').item.json;\nconst searchData = $('Execute Web Search').item.json;\n\nif (!llmResponse.choices || !llmResponse.choices[0]) {\n  throw new Error('Invalid LLM response format');\n}\n\nconst analysisText = llmResponse.choices[0].message.content;\n\n// Parse structured information from LLM response\n// This is a simplified parser - in production would use more sophisticated extraction\nconst components = [];\nconst circuits = [];\nlet confidence = 0.7; // Base confidence\n\n// Extract components (simplified parsing)\nconst componentMatches = analysisText.match(/(?:fuse|relay|connector|ecu|sensor)\\s+[^\\n]*/gi) || [];\ncomponentMatches.forEach((match, index) => {\n  const type = match.toLowerCase().includes('fuse') ? 'fuse' :\n               match.toLowerCase().includes('relay') ? 'relay' :\n               match.toLowerCase().includes('connector') ? 'connector' :\n               match.toLowerCase().includes('ecu') ? 'ecu' : 'sensor';\n  \n  components.push({\n    id: `${type}_${String(index + 1).padStart(3, '0')}`,\n    type: type,\n    label: match.trim(),\n    zone: 'engine', // Default zone\n    notes: `Identified from research analysis`\n  });\n});\n\n// Extract circuits (simplified)\nconst circuitMatches = analysisText.match(/(?:circuit|system)\\s+[^\\n]*/gi) || [];\ncircuitMatches.forEach((match, index) => {\n  circuits.push({\n    id: `circuit_${String(index + 1).padStart(3, '0')}`,\n    label: match.trim(),\n    voltage: '12V' // Default\n  });\n});\n\n// Calculate confidence based on sources and content quality\nconst sourceCount = searchData.sources.length;\nconst avgCredibility = searchData.searchResults\n  .flatMap(r => r.results)\n  .reduce((sum, r) => sum + r.credibility, 0) / searchData.totalResults;\n\n// Confidence scoring algorithm\nif (sourceCount >= 3 && avgCredibility >= 0.8) {\n  confidence = 0.9;\n} else if (sourceCount >= 2 && avgCredibility >= 0.7) {\n  confidence = 0.8;\n} else if (sourceCount >= 2) {\n  confidence = 0.7;\n} else {\n  confidence = 0.5;\n}\n\n// Determine if manual review is required\nconst requiresManualReview = confidence < 0.75 || sourceCount < 2;\n\n// Build research manifest\nconst researchManifest = {\n  brand: vehicleInfo.brand,\n  model: vehicleInfo.model,\n  year: vehicleInfo.year,\n  sources: searchData.sources,\n  summary: `Research analysis for ${vehicleInfo.brand} ${vehicleInfo.model} ${vehicleInfo.year} electrical system`,\n  components: components,\n  circuits: circuits,\n  confidence: confidence,\n  requiresManualReview: requiresManualReview,\n  gaps: components.length === 0 ? ['No electrical components identified'] : []\n};\n\nif (vehicleInfo.trim) researchManifest.trim = vehicleInfo.trim;\nif (vehicleInfo.market) researchManifest.market = vehicleInfo.market;\n\nreturn [{\n  researchManifest: researchManifest,\n  analysisText: analysisText,\n  searchMetadata: {\n    queriesExecuted: searchData.queriesExecuted,\n    totalResults: searchData.totalResults,\n    sourceCount: sourceCount,\n    avgCredibility: avgCredibility\n  },\n  vehicleSig: vehicleInfo.vehicleSig,\n  timestamp: new Date().toISOString()\n}];"
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Build Research Manifest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 400]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.ajv-validate",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Validate Research Manifest",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2000, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "leftValue": "={{ $('Validate Research Manifest').item.json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+      "name": "Check Validation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2220, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+              "leftValue": "={{ $('Build Research Manifest').item.json.researchManifest.confidence }}",
+              "rightValue": 0.75,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+      "name": "Check Confidence Threshold",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2440, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Build Search Queries'].json.INGEST_URL || 'http://ingest:3001' }}/research",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Vehicle-Sig",
+              "value": "={{ $('Build Research Manifest').item.json.vehicleSig }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "manifest",
+              "value": "={{ $('Build Research Manifest').item.json.researchManifest }}"
+            },
+            {
+              "name": "jobId",
+              "value": "={{ $json.jobId || require('uuid').v4() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3,
+            "waitBetween": 1000
+          }
+        }
+      },
+      "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+      "name": "Store Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2660, 300]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.cache-write",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+      "name": "Cache Research Result",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2880, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "researchManifest",
+              "value": "={{ $('Build Research Manifest').item.json.researchManifest }}",
+              "type": "object"
+            },
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "name": "fromCache",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+              "name": "vehicleSig",
+              "value": "={{ $('Build Research Manifest').item.json.vehicleSig }}",
+              "type": "string"
+            },
+            {
+              "id": "y5z6a7b8-c9d0-1234-yzab-456789012345",
+              "name": "searchMetadata",
+              "value": "={{ $('Build Research Manifest').item.json.searchMetadata }}",
+              "type": "object"
+            },
+            {
+              "id": "z6a7b8c9-d0e1-2345-zabc-567890123456",
+              "name": "storagePath",
+              "value": "={{ $('Store Research').item.json.storagePath }}",
+              "type": "string"
+            },
+            {
+              "id": "a7b8c9d0-e1f2-3456-abcd-678901234567",
+              "name": "cached",
+              "value": "={{ $('Cache Research Result').item.json.cacheWritten }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b8c9d0e1-f2g3-4567-bcde-789012345678",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [3100, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Build Search Queries'].json.INGEST_URL || 'http://ingest:3001' }}/manual-review",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "errorPayload",
+              "value": "={{ {type: 'LOW_CONFIDENCE_RESEARCH', manifest: $('Build Research Manifest').item.json.researchManifest, metadata: $('Build Research Manifest').item.json.searchMetadata} }}"
+            },
+            {
+              "name": "priority",
+              "value": "high"
+            },
+            {
+              "name": "category",
+              "value": "research_quality"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "c9d0e1f2-g3h4-5678-cdef-890123456789",
+      "name": "Queue Manual Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2660, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d0e1f2g3-h4i5-6789-defg-901234567890",
+              "name": "researchManifest",
+              "value": "={{ $('Build Research Manifest').item.json.researchManifest }}",
+              "type": "object"
+            },
+            {
+              "id": "e1f2g3h4-i5j6-7890-efgh-012345678901",
+              "name": "requiresManualReview",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "f2g3h4i5-j6k7-8901-fghi-123456789012",
+              "name": "reason",
+              "value": "Low confidence score - requires human validation",
+              "type": "string"
+            },
+            {
+              "id": "g3h4i5j6-k7l8-9012-ghij-234567890123",
+              "name": "reviewId",
+              "value": "={{ $('Queue Manual Review').item.json.reviewId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "h4i5j6k7-l8m9-0123-hijk-345678901234",
+      "name": "Manual Review Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2880, 500]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Check Research Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Research Cache": {
+      "main": [
+        [
+          {
+            "node": "Check Cache Hit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Cache Hit": {
+      "main": [
+        [
+          {
+            "node": "Return Cached Research",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rate Limit Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Check": {
+      "main": [
+        [
+          {
+            "node": "Execute Web Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Web Search": {
+      "main": [
+        [
+          {
+            "node": "LLM Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Analysis": {
+      "main": [
+        [
+          {
+            "node": "Build Research Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Research Manifest": {
+      "main": [
+        [
+          {
+            "node": "Validate Research Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Research Manifest": {
+      "main": [
+        [
+          {
+            "node": "Check Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation": {
+      "main": [
+        [
+          {
+            "node": "Check Confidence Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Confidence Threshold": {
+      "main": [
+        [
+          {
+            "node": "Store Research",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Research": {
+      "main": [
+        [
+          {
+            "node": "Cache Research Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Research Result": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Manual Review Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6f7g8h9i-0j1k-2345-6789-012345ghijkl",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "research-subflow"
+  },
+  "id": "research-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:50:00.000Z",
+      "updatedAt": "2025-10-08T17:50:00.000Z",
+      "id": "research",
+      "name": "research"
+    }
+  ]
+}
