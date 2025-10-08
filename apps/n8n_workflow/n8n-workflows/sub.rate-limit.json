@@ -1,0 +1,194 @@
+{
+  "name": "sub.rate-limit",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Token bucket rate limiting implementation\nconst input = $input.first().json;\nconst { service = 'default', tokens = 1, maxTokens = 60, refillRate = 1 } = input;\n\n// Generate bucket key\nconst bucketKey = `rate_limit:${service}`;\nconst now = Date.now();\n\n// Check current bucket state from cache\nconst currentState = {\n  tokens: maxTokens,\n  lastRefill: now,\n  key: bucketKey\n};\n\n// Calculate tokens to add based on time elapsed\nconst timeSinceLastRefill = now - currentState.lastRefill;\nconst tokensToAdd = Math.floor(timeSinceLastRefill / 1000) * refillRate;\nconst newTokenCount = Math.min(maxTokens, currentState.tokens + tokensToAdd);\n\n// Check if we have enough tokens\nif (newTokenCount >= tokens) {\n  // Allow request and consume tokens\n  const updatedState = {\n    tokens: newTokenCount - tokens,\n    lastRefill: now,\n    allowed: true,\n    remainingTokens: newTokenCount - tokens,\n    retryAfter: 0\n  };\n  \n  return [{\n    ...updatedState,\n    bucketKey: bucketKey,\n    service: service,\n    consumed: tokens\n  }];\n} else {\n  // Rate limit exceeded\n  const retryAfter = Math.ceil((tokens - newTokenCount) / refillRate) * 1000;\n  \n  return [{\n    tokens: newTokenCount,\n    lastRefill: now,\n    allowed: false,\n    remainingTokens: newTokenCount,\n    retryAfter: retryAfter,\n    bucketKey: bucketKey,\n    service: service,\n    error: 'RATE_LIMIT_EXCEEDED'\n  }];\n}"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Token Bucket Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+              "leftValue": "={{ $('Token Bucket Check').item.json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Check Rate Limit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+              "name": "allowed",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+              "name": "service",
+              "value": "={{ $('Token Bucket Check').item.json.service }}",
+              "type": "string"
+            },
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "name": "remainingTokens",
+              "value": "={{ $('Token Bucket Check').item.json.remainingTokens }}",
+              "type": "number"
+            },
+            {
+              "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+              "name": "consumed",
+              "value": "={{ $('Token Bucket Check').item.json.consumed }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Allow Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+              "name": "allowed",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "name": "error",
+              "value": "RATE_LIMIT_EXCEEDED",
+              "type": "string"
+            },
+            {
+              "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+              "name": "retryAfter",
+              "value": "={{ $('Token Bucket Check').item.json.retryAfter }}",
+              "type": "number"
+            },
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "name": "service",
+              "value": "={{ $('Token Bucket Check').item.json.service }}",
+              "type": "string"
+            },
+            {
+              "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+              "name": "message",
+              "value": "={{ 'Rate limit exceeded for service: ' + $('Token Bucket Check').item.json.service + '. Retry after ' + $('Token Bucket Check').item.json.retryAfter + 'ms' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Rate Limited Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [900, 400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Token Bucket Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Bucket Check": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Allow Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rate Limited Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7g8h9i0j-1k2l-3456-7890-123456hijklm",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "rate-limit-subflow"
+  },
+  "id": "rate-limit-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:50:00.000Z",
+      "updatedAt": "2025-10-08T17:50:00.000Z",
+      "id": "rate-limiting",
+      "name": "rate-limiting"
+    }
+  ]
+}
