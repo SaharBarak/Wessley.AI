@@ -1,0 +1,379 @@
+{
+  "name": "sub.emit-lake-event",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate event envelope following EventEnvelope@1 schema\nconst crypto = require('crypto');\nconst { v4: uuidv4 } = require('uuid');\n\n// Extract input parameters\nconst input = $input.first().json;\nconst {\n  jobId,\n  stage,\n  step,\n  eventType,\n  payload = {},\n  metadata = {},\n  vehicleSig\n} = input;\n\n// Validate required fields\nif (!jobId) throw new Error('jobId is required');\nif (!stage) throw new Error('stage is required');\nif (!eventType) throw new Error('eventType is required');\n\n// Generate event ID and timestamp\nconst eventId = uuidv4();\nconst timestamp = new Date().toISOString();\n\n// Calculate payload hash for deduplication\nconst payloadString = JSON.stringify(payload, Object.keys(payload).sort());\nconst payloadHash = crypto.createHash('sha256').update(payloadString).digest('hex');\n\n// Build event envelope\nconst eventEnvelope = {\n  eventId,\n  jobId,\n  timestamp,\n  stage,\n  eventType,\n  payloadHash,\n  payload\n};\n\n// Add optional fields\nif (step) eventEnvelope.step = step;\nif (metadata && Object.keys(metadata).length > 0) {\n  eventEnvelope.metadata = { ...metadata };\n  \n  // Add vehicleSig to metadata if provided\n  if (vehicleSig) {\n    eventEnvelope.metadata.vehicleSig = vehicleSig;\n  }\n}\n\n// Prepare for storage path generation\nconst date = new Date();\nconst datePrefix = date.toISOString().split('T')[0]; // YYYY-MM-DD\nconst vehiclePrefix = vehicleSig || 'unknown';\nconst filename = `${eventId}.ndjson`;\n\nconst result = {\n  eventEnvelope,\n  storagePath: `raw/events/${datePrefix}/${vehiclePrefix}/${filename}`,\n  ndjsonLine: JSON.stringify(eventEnvelope),\n  metadata: {\n    size: Buffer.byteLength(JSON.stringify(eventEnvelope), 'utf8'),\n    eventId,\n    timestamp\n  }\n};\n\nreturn [result];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Build Event Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.ajv-validate",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Validate Event Envelope",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+              "leftValue": "={{ $('Validate Event Envelope').item.json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Check Validation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Build Event Envelope'].json.INGEST_URL || 'http://ingest:3001' }}/events",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Event-Type",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope.eventType }}"
+            },
+            {
+              "name": "X-Job-ID",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope.jobId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "eventEnvelope",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope }}"
+            },
+            {
+              "name": "storagePath",
+              "value": "={{ $('Build Event Envelope').item.json.storagePath }}"
+            },
+            {
+              "name": "ndjsonLine",
+              "value": "={{ $('Build Event Envelope').item.json.ndjsonLine }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3,
+            "waitBetween": 1000
+          }
+        }
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Store Event to Lake",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "leftValue": "={{ $('Store Event to Lake').item.json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "between",
+                "rightValue2": 299
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Check Storage Result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+              "name": "eventId",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope.eventId }}",
+              "type": "string"
+            },
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "name": "storagePath",
+              "value": "={{ $('Build Event Envelope').item.json.storagePath }}",
+              "type": "string"
+            },
+            {
+              "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+              "name": "timestamp",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "name": "message",
+              "value": "Event successfully stored to data lake",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1560, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "name": "error",
+              "value": "STORAGE_FAILED",
+              "type": "string"
+            },
+            {
+              "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+              "name": "message",
+              "value": "={{ 'Failed to store event to data lake: ' + ($('Store Event to Lake').item.json.statusCode || 'unknown error') }}",
+              "type": "string"
+            },
+            {
+              "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+              "name": "eventId",
+              "value": "={{ $('Build Event Envelope').item.json.eventEnvelope.eventId }}",
+              "type": "string"
+            },
+            {
+              "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+              "name": "details",
+              "value": "={{ $('Store Event to Lake').item.json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+      "name": "Storage Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "error",
+              "value": "VALIDATION_FAILED",
+              "type": "string"
+            },
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "name": "message",
+              "value": "Event envelope failed schema validation",
+              "type": "string"
+            },
+            {
+              "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+              "name": "validationErrors",
+              "value": "={{ $('Validate Event Envelope').item.json.errors }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "y5z6a7b8-c9d0-1234-yzab-456789012345",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Event Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Envelope": {
+      "main": [
+        [
+          {
+            "node": "Validate Event Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Event Envelope": {
+      "main": [
+        [
+          {
+            "node": "Check Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation": {
+      "main": [
+        [
+          {
+            "node": "Store Event to Lake",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Event to Lake": {
+      "main": [
+        [
+          {
+            "node": "Check Storage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Storage Result": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Storage Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2b3c4d5e-6f7g-8901-2345-678901bcdefg",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "emit-lake-event-subflow"
+  },
+  "id": "emit-lake-event-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:26:00.000Z",
+      "updatedAt": "2025-10-08T17:26:00.000Z",
+      "id": "logging",
+      "name": "logging"
+    }
+  ]
+}
