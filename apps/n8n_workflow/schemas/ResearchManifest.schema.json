@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ResearchManifest@1", 
+  "title": "Research Manifest",
+  "description": "Output of web research phase with vehicle-specific electrical information",
+  "type": "object",
+  "required": ["brand", "model", "year", "sources", "confidence"],
+  "properties": {
+    "brand": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Vehicle manufacturer"
+    },
+    "model": {
+      "type": "string", 
+      "minLength": 1,
+      "description": "Vehicle model"
+    },
+    "year": {
+      "type": "integer",
+      "minimum": 1900,
+      "maximum": 2030,
+      "description": "Vehicle year"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "minItems": 1,
+      "description": "URLs of credible sources used"
+    },
+    "summary": {
+      "type": "string",
+      "description": "High-level summary of research findings"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Component identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["fuse", "relay", "connector", "ecu", "sensor", "actuator", "lamp", "motor", "splice", "ground"],
+            "description": "Component type"
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable component label"
+          },
+          "zone": {
+            "type": "string",
+            "description": "Vehicle zone location"
+          },
+          "rating": {
+            "type": "string",
+            "description": "Electrical rating (e.g., '15A', '12V')"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional component information"
+          }
+        }
+      },
+      "description": "Discovered electrical components"
+    },
+    "circuits": {
+      "type": "array", 
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Circuit identifier"
+          },
+          "label": {
+            "type": "string",
+            "description": "Circuit name/function"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Component IDs in this circuit"
+          },
+          "voltage": {
+            "type": "string",
+            "description": "Circuit voltage"
+          },
+          "protection": {
+            "type": "string", 
+            "description": "Fuse/circuit breaker rating"
+          }
+        }
+      },
+      "description": "Discovered electrical circuits"
+    },
+    "requiresManualReview": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether findings need manual review"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Overall confidence in research findings"
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Areas where information is missing or uncertain"
+    }
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "testVectors": [
+    {
+      "name": "well-documented-modern-vehicle",
+      "description": "Recent popular vehicle with abundant online documentation",
+      "input": {
+        "brand": "Toyota",
+        "model": "Camry",
+        "year": 2020,
+        "trim": "LE",
+        "market": "US"
+      },
+      "expectedOutcome": {
+        "researchQuality": {
+          "minimumSources": 3,
+          "minimumConfidence": 0.85,
+          "expectedComponents": ["ECU", "fuses", "relays", "sensors"],
+          "manualReviewRequired": false
+        },
+        "pipelineSuccess": true,
+        "maxDurationMinutes": 4,
+        "expectedArtifacts": [
+          "research manifest",
+          "electro graph", 
+          "node metadata",
+          "3D graph",
+          "GLB model",
+          "viewer manifest"
+        ]
+      },
+      "validationChecks": [
+        "research_confidence >= 0.85",
+        "component_count >= 20",
+        "circuit_count >= 8", 
+        "glb_file_size < 50MB",
+        "all_schemas_valid"
+      ]
+    },
+    {
+      "name": "obscure-older-vehicle", 
+      "description": "Less common vehicle with limited online documentation",
+      "input": {
+        "brand": "Hyundai",
+        "model": "Galloper", 
+        "year": 2000,
+        "market": "International"
+      },
+      "expectedOutcome": {
+        "researchQuality": {
+          "minimumSources": 2,
+          "minimumConfidence": 0.65,
+          "expectedComponents": ["basic electrical"],
+          "manualReviewRequired": true
+        },
+        "pipelineSuccess": true,
+        "maxDurationMinutes": 6,
+        "expectedArtifacts": [
+          "research manifest",
+          "manual review queue entry"
+        ]
+      },
+      "validationChecks": [
+        "research_confidence < 0.75",
+        "manual_review_triggered == true",
+        "component_count >= 10",
+        "error_events_count == 0"
+      ]
+    },
+    {
+      "name": "luxury-complex-vehicle",
+      "description": "High-end vehicle with complex electrical systems",
+      "input": {
+        "brand": "BMW",
+        "model": "X5", 
+        "year": 2019,
+        "trim": "xDrive40i",
+        "market": "EU"
+      },
+      "expectedOutcome": {
+        "researchQuality": {
+          "minimumSources": 3,
+          "minimumConfidence": 0.80,
+          "expectedComponents": ["CAN bus", "multiple ECUs", "advanced sensors"],
+          "manualReviewRequired": false
+        },
+        "pipelineSuccess": true,
+        "maxDurationMinutes": 7,
+        "expectedArtifacts": [
+          "complex 3D model",
+          "multiple circuit groups"
+        ]
+      },
+      "validationChecks": [
+        "component_count >= 50",
+        "circuit_count >= 15",
+        "ecu_count >= 5",
+        "can_bus_present == true"
+      ]
+    },
+    {
+      "name": "electric-vehicle",
+      "description": "Electric vehicle with high-voltage systems",
+      "input": {
+        "brand": "Tesla",
+        "model": "Model 3",
+        "year": 2021,
+        "market": "US"
+      },
+      "expectedOutcome": {
+        "researchQuality": {
+          "minimumSources": 3,
+          "minimumConfidence": 0.75,
+          "expectedComponents": ["high voltage", "battery management", "inverter"],
+          "manualReviewRequired": false
+        },
+        "pipelineSuccess": true,
+        "maxDurationMinutes": 5,
+        "specialConsiderations": [
+          "high voltage safety warnings",
+          "battery system modeling"
+        ]
+      },
+      "validationChecks": [
+        "hv_system_present == true",
+        "battery_components >= 5",
+        "safety_warnings_included == true"
+      ]
+    }
+  ],
+  "errorTestVectors": [
+    {
+      "name": "invalid-input-empty-brand",
+      "description": "Test input validation with empty brand",
+      "input": {
+        "brand": "",
+        "model": "Camry", 
+        "year": 2020
+      },
+      "expectedOutcome": {
+        "pipelineSuccess": false,
+        "errorType": "validation_error",
+        "errorMessage": "Brand is required"
+      }
+    },
+    {
+      "name": "invalid-input-future-year",
+      "description": "Test input validation with future year",
+      "input": {
+        "brand": "Toyota",
+        "model": "Camry",
+        "year": 2030
+      },
+      "expectedOutcome": {
+        "pipelineSuccess": false,
+        "errorType": "validation_error", 
+        "errorMessage": "Year must be between 1900 and current year"
+      }
+    },
+    {
+      "name": "nonexistent-vehicle",
+      "description": "Test handling of completely unknown vehicle",
+      "input": {
+        "brand": "NonExistentBrand",
+        "model": "FakeModel",
+        "year": 2020
+      },
+      "expectedOutcome": {
+        "pipelineSuccess": false,
+        "errorType": "research_failed",
+        "researchConfidence": 0.0,
+        "manualReviewRequired": true
+      }
+    }
+  ],
+  "performanceTestVectors": [
+    {
+      "name": "idempotency-test",
+      "description": "Test that identical requests return cached results",
+      "test": {
+        "requests": [
+          {
+            "input": {"brand": "Honda", "model": "Civic", "year": 2019},
+            "idempotencyKey": "test-key-001",
+            "expectedDuration": "> 60 seconds"
+          },
+          {
+            "input": {"brand": "Honda", "model": "Civic", "year": 2019}, 
+            "idempotencyKey": "test-key-001",
+            "expectedDuration": "< 5 seconds"
+          }
+        ],
+        "validation": "second_request_uses_cache == true"
+      }
+    },
+    {
+      "name": "cache-effectiveness",
+      "description": "Test LLM metadata caching reduces API calls",
+      "test": {
+        "vehicles": [
+          {"brand": "Ford", "model": "F-150", "year": 2020},
+          {"brand": "Ford", "model": "F-150", "year": 2021},
+          {"brand": "Ford", "model": "F-150", "year": 2019}
+        ],
+        "validation": "cache_hit_rate >= 0.8"
+      }
+    }
+  ],
+  "testConfiguration": {
+    "environment": "development",
+    "timeoutMinutes": 10,
+    "retryAttempts": 2,
+    "dataLakeValidation": true,
+    "schemaValidation": true,
+    "costTracking": true,
+    "cleanupAfterTests": true
+  },
+  "validationSchemas": {
+    "researchManifest": "ResearchManifest@1",
+    "electroGraph": "ElectroGraph@1", 
+    "nodeMetadata": "NodeMetadata@1",
+    "electroGraph3D": "ElectroGraph3D@1",
+    "manifest": "Manifest@1",
+    "eventEnvelope": "EventEnvelope@1"
+  },
+  "mockResponses": {
+    "openaiSuccess": {
+      "model": "gpt-4o",
+      "choices": [{
+        "message": {
+          "content": "{\"nodeId\":\"fuse_001\",\"confidence\":0.85,\"evidence\":[{\"text\":\"15A fuse protects headlight circuit\",\"source\":\"manual\"}]}"
+        }
+      }]
+    },
+    "searchApiSuccess": {
+      "results": [
+        {
+          "title": "Toyota Camry 2020 Wiring Diagram",
+          "url": "https://example.com/wiring",
+          "snippet": "Complete electrical system documentation"
+        }
+      ]
+    }
+  }
+}
