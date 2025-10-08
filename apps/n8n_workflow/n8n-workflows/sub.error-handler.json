@@ -1,0 +1,409 @@
+{
+  "name": "sub.error-handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract error information and context\nconst input = $input.first().json;\nconst { \n  error, \n  context = {},\n  jobId,\n  vehicleSig,\n  stage = 'unknown',\n  step,\n  originalPayload = {}\n} = input;\n\n// Parse error information\nlet errorInfo = {\n  message: 'Unknown error',\n  type: 'UNKNOWN_ERROR',\n  code: null,\n  stack: null,\n  node: context.node || 'unknown',\n  timestamp: new Date().toISOString()\n};\n\n// Handle different error types\nif (typeof error === 'string') {\n  errorInfo.message = error;\n  errorInfo.type = 'STRING_ERROR';\n} else if (error && typeof error === 'object') {\n  errorInfo.message = error.message || error.description || 'Object error';\n  errorInfo.type = error.name || error.type || 'OBJECT_ERROR';\n  errorInfo.code = error.code || error.statusCode;\n  errorInfo.stack = error.stack;\n  \n  // Handle HTTP errors\n  if (error.statusCode) {\n    errorInfo.type = 'HTTP_ERROR';\n    errorInfo.httpStatus = error.statusCode;\n  }\n  \n  // Handle validation errors\n  if (error.errors && Array.isArray(error.errors)) {\n    errorInfo.type = 'VALIDATION_ERROR';\n    errorInfo.validationErrors = error.errors;\n  }\n  \n  // Handle API errors\n  if (error.response) {\n    errorInfo.type = 'API_ERROR';\n    errorInfo.apiResponse = {\n      status: error.response.status,\n      statusText: error.response.statusText,\n      data: error.response.data\n    };\n  }\n}\n\n// Determine error severity\nlet severity = 'error';\nif (errorInfo.type === 'VALIDATION_ERROR') {\n  severity = 'warning';\n} else if (errorInfo.httpStatus >= 500) {\n  severity = 'critical';\n} else if (errorInfo.type.includes('TIMEOUT') || errorInfo.type.includes('RATE_LIMIT')) {\n  severity = 'warning';\n}\n\n// Build structured error payload\nconst errorPayload = {\n  error: errorInfo,\n  severity,\n  context: {\n    jobId: jobId || 'unknown',\n    vehicleSig: vehicleSig || 'unknown',\n    stage,\n    step: step || null,\n    node: context.node || 'unknown',\n    workflow: context.workflow || 'unknown',\n    execution: context.execution || 'unknown'\n  },\n  originalPayload: originalPayload,\n  recovery: {\n    retryable: isRetryable(errorInfo),\n    suggestedAction: getSuggestedAction(errorInfo),\n    manualReviewRequired: requiresManualReview(errorInfo)\n  },\n  metadata: {\n    errorId: require('uuid').v4(),\n    reportedAt: new Date().toISOString(),\n    version: '1.0'\n  }\n};\n\n// Helper functions\nfunction isRetryable(errorInfo) {\n  const retryableTypes = [\n    'HTTP_ERROR',\n    'TIMEOUT_ERROR', \n    'RATE_LIMIT_ERROR',\n    'NETWORK_ERROR'\n  ];\n  \n  if (retryableTypes.includes(errorInfo.type)) {\n    return true;\n  }\n  \n  if (errorInfo.httpStatus >= 500) {\n    return true;\n  }\n  \n  if (errorInfo.httpStatus === 429) {\n    return true;\n  }\n  \n  return false;\n}\n\nfunction getSuggestedAction(errorInfo) {\n  switch (errorInfo.type) {\n    case 'VALIDATION_ERROR':\n      return 'Check data format and schema compliance';\n    case 'HTTP_ERROR':\n      if (errorInfo.httpStatus === 401) return 'Check API credentials';\n      if (errorInfo.httpStatus === 403) return 'Check API permissions';\n      if (errorInfo.httpStatus === 404) return 'Check API endpoint URL';\n      if (errorInfo.httpStatus === 429) return 'Implement rate limiting backoff';\n      if (errorInfo.httpStatus >= 500) return 'Retry request after delay';\n      return 'Review HTTP request configuration';\n    case 'API_ERROR':\n      return 'Check API provider status and quota';\n    case 'TIMEOUT_ERROR':\n      return 'Increase timeout or optimize request';\n    case 'RATE_LIMIT_ERROR':\n      return 'Implement exponential backoff';\n    default:\n      return 'Review logs and context for specific guidance';\n  }\n}\n\nfunction requiresManualReview(errorInfo) {\n  const manualReviewTypes = [\n    'VALIDATION_ERROR',\n    'AUTHENTICATION_ERROR',\n    'PERMISSION_ERROR',\n    'DATA_CORRUPTION_ERROR'\n  ];\n  \n  return manualReviewTypes.includes(errorInfo.type) || \n         errorInfo.httpStatus === 401 || \n         errorInfo.httpStatus === 403;\n}\n\nreturn [errorPayload];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Process Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.emit-lake-event",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Emit Error Event",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+              "leftValue": "={{ $('Process Error').item.json.recovery.manualReviewRequired }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Check Manual Review",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Process Error'].json.INGEST_URL || 'http://ingest:3001' }}/manual-review",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Error-Type",
+              "value": "={{ $('Process Error').item.json.error.type }}"
+            },
+            {
+              "name": "X-Severity",
+              "value": "={{ $('Process Error').item.json.severity }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "errorPayload",
+              "value": "={{ $('Process Error').item.json }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $('Process Error').item.json.severity === 'critical' ? 'high' : 'normal' }}"
+            },
+            {
+              "name": "category",
+              "value": "pipeline_error"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 2,
+            "waitBetween": 500
+          }
+        }
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Queue Manual Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "leftValue": "={{ $('Process Error').item.json.recovery.retryable }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Check Retryable",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "name": "errorHandled",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+              "name": "errorId",
+              "value": "={{ $('Process Error').item.json.metadata.errorId }}",
+              "type": "string"
+            },
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "name": "severity",
+              "value": "={{ $('Process Error').item.json.severity }}",
+              "type": "string"
+            },
+            {
+              "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+              "name": "errorType",
+              "value": "={{ $('Process Error').item.json.error.type }}",
+              "type": "string"
+            },
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "name": "message",
+              "value": "={{ $('Process Error').item.json.error.message }}",
+              "type": "string"
+            },
+            {
+              "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+              "name": "suggestedAction",
+              "value": "={{ $('Process Error').item.json.recovery.suggestedAction }}",
+              "type": "string"
+            },
+            {
+              "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+              "name": "retryable",
+              "value": "={{ $('Process Error').item.json.recovery.retryable }}",
+              "type": "boolean"
+            },
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "name": "manualReviewRequired",
+              "value": "={{ $('Process Error').item.json.recovery.manualReviewRequired }}",
+              "type": "boolean"
+            },
+            {
+              "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+              "name": "context",
+              "value": "={{ $('Process Error').item.json.context }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+      "name": "Build Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+              "name": "retryRecommended",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+              "name": "retryDelay",
+              "value": "={{ $('Process Error').item.json.error.type === 'RATE_LIMIT_ERROR' ? 60000 : 5000 }}",
+              "type": "number"
+            },
+            {
+              "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+              "name": "maxRetries",
+              "value": "={{ $('Process Error').item.json.severity === 'critical' ? 5 : 3 }}",
+              "type": "number"
+            },
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "backoffStrategy",
+              "value": "exponential",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+      "name": "Add Retry Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+              "name": "retryRecommended",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "y5z6a7b8-c9d0-1234-yzab-456789012345",
+              "name": "finalFailure",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "z6a7b8c9-d0e1-2345-zabc-567890123456",
+      "name": "Add Non-Retry Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1340, 600]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Error": {
+      "main": [
+        [
+          {
+            "node": "Emit Error Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emit Error Event": {
+      "main": [
+        [
+          {
+            "node": "Check Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Queue Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Retryable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retryable": {
+      "main": [
+        [
+          {
+            "node": "Add Retry Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add Non-Retry Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Retry Info": {
+      "main": [
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Non-Retry Info": {
+      "main": [
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": {
+      "enabled": false
+    }
+  },
+  "versionId": "3c4d5e6f-7g8h-9012-3456-789012cdefgh",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "error-handler-subflow"
+  },
+  "id": "error-handler-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T17:26:00.000Z",
+      "updatedAt": "2025-10-08T17:26:00.000Z",
+      "id": "error-handling",
+      "name": "error-handling"
+    }
+  ]
+}
