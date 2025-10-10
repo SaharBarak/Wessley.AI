@@ -1,0 +1,395 @@
+{
+  "name": "sub.normalize",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse input and prepare for normalization\nconst input = $input.first().json;\nconst { researchManifest, vehicleInfo, jobId } = input;\n\nif (!researchManifest) {\n  throw new Error('Research manifest is required for normalization');\n}\n\n// Generate vehicle signature\nconst vehicleSig = vehicleInfo?.vehicleSig || \n  `${researchManifest.brand}:${researchManifest.model}:${researchManifest.year}`;\n\n// Initialize normalization context\nconst normalizationContext = {\n  vehicleSig,\n  jobId: jobId || require('uuid').v4(),\n  inputManifest: researchManifest,\n  metadata: {\n    brand: researchManifest.brand,\n    model: researchManifest.model,\n    year: researchManifest.year,\n    trim: researchManifest.trim,\n    market: researchManifest.market,\n    generated: new Date().toISOString()\n  },\n  stats: {\n    inputComponents: researchManifest.components?.length || 0,\n    inputCircuits: researchManifest.circuits?.length || 0,\n    inputSources: researchManifest.sources?.length || 0,\n    confidence: researchManifest.confidence || 0\n  }\n};\n\nreturn [normalizationContext];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Initialize Normalization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize components from research manifest to ElectroGraph format\nconst context = $input.first().json;\nconst researchComponents = context.inputManifest.components || [];\n\nconst normalizedNodes = [];\nconst nodeIndex = new Map(); // Track nodes by ID for deduplication\n\n// Component type mapping and validation\nconst validNodeTypes = [\n  'battery', 'fuse', 'relay', 'connector', 'ecu', 'sensor', \n  'actuator', 'lamp', 'motor', 'splice', 'ground', 'terminal'\n];\n\n// Zone normalization mapping\nconst zoneMapping = {\n  'engine': 'engine',\n  'underhood': 'engine', \n  'motor': 'engine',\n  'dash': 'dash',\n  'dashboard': 'dash',\n  'instrument': 'dash',\n  'interior': 'interior',\n  'cabin': 'interior',\n  'passenger': 'interior',\n  'trunk': 'trunk',\n  'boot': 'trunk',\n  'rear': 'trunk',\n  'exterior': 'exterior',\n  'outside': 'exterior',\n  'undercar': 'undercar',\n  'chassis': 'undercar'\n};\n\nresearchComponents.forEach((component, index) => {\n  // Validate and normalize component type\n  let normalizedType = component.type?.toLowerCase();\n  if (!normalizedType || !validNodeTypes.includes(normalizedType)) {\n    // Try to infer type from label\n    const label = component.label?.toLowerCase() || '';\n    if (label.includes('fuse')) normalizedType = 'fuse';\n    else if (label.includes('relay')) normalizedType = 'relay';\n    else if (label.includes('connector') || label.includes('plug')) normalizedType = 'connector';\n    else if (label.includes('ecu') || label.includes('module')) normalizedType = 'ecu';\n    else if (label.includes('sensor')) normalizedType = 'sensor';\n    else if (label.includes('motor')) normalizedType = 'motor';\n    else if (label.includes('lamp') || label.includes('light')) normalizedType = 'lamp';\n    else if (label.includes('ground')) normalizedType = 'ground';\n    else normalizedType = 'terminal'; // Default fallback\n  }\n\n  // Generate normalized node ID\n  const nodeId = component.id || `${normalizedType}_${String(index + 1).padStart(3, '0')}`;\n  \n  // Skip duplicates\n  if (nodeIndex.has(nodeId)) {\n    console.warn(`Duplicate node ID found: ${nodeId}`);\n    return;\n  }\n\n  // Normalize zone\n  let normalizedZone = zoneMapping[component.zone?.toLowerCase()] || 'engine';\n  \n  // Try to infer zone from label if not provided\n  if (!component.zone && component.label) {\n    const label = component.label.toLowerCase();\n    if (label.includes('engine') || label.includes('ecu')) normalizedZone = 'engine';\n    else if (label.includes('dash') || label.includes('instrument')) normalizedZone = 'dash';\n    else if (label.includes('interior') || label.includes('cabin')) normalizedZone = 'interior';\n    else if (label.includes('trunk') || label.includes('rear')) normalizedZone = 'trunk';\n    else if (label.includes('exterior') || label.includes('headlight')) normalizedZone = 'exterior';\n  }\n\n  // Build normalized node\n  const normalizedNode = {\n    id: nodeId,\n    type: normalizedType,\n    label: component.label || `${normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1)} ${index + 1}`,\n    zone: normalizedZone\n  };\n\n  // Add optional properties if available\n  const properties = {};\n  if (component.rating) properties.rating = component.rating;\n  if (component.voltage) properties.voltage = component.voltage;\n  if (component.current) properties.current = component.current;\n  if (component.partNumber) properties.partNumber = component.partNumber;\n  if (component.manufacturer) properties.manufacturer = component.manufacturer;\n  \n  if (Object.keys(properties).length > 0) {\n    normalizedNode.properties = properties;\n  }\n\n  // Add circuits if specified\n  if (component.circuits && Array.isArray(component.circuits)) {\n    normalizedNode.circuits = component.circuits;\n  }\n\n  normalizedNodes.push(normalizedNode);\n  nodeIndex.set(nodeId, normalizedNode);\n});\n\n// Add essential nodes if missing (battery, ground)\nif (!normalizedNodes.find(n => n.type === 'battery')) {\n  const batteryNode = {\n    id: 'battery_main',\n    type: 'battery',\n    label: 'Main Battery',\n    zone: 'engine',\n    properties: {\n      voltage: '12V',\n      rating: '12V'\n    }\n  };\n  normalizedNodes.unshift(batteryNode); // Add at beginning\n  nodeIndex.set('battery_main', batteryNode);\n}\n\nif (!normalizedNodes.find(n => n.type === 'ground')) {\n  const groundNode = {\n    id: 'ground_main',\n    type: 'ground',\n    label: 'Main Ground',\n    zone: 'engine'\n  };\n  normalizedNodes.push(groundNode);\n  nodeIndex.set('ground_main', groundNode);\n}\n\nreturn [{\n  ...context,\n  normalizedNodes,\n  nodeIndex: Array.from(nodeIndex.entries()), // Convert Map to array for JSON\n  normalizationStats: {\n    originalComponents: researchComponents.length,\n    normalizedNodes: normalizedNodes.length,\n    addedEssentialNodes: normalizedNodes.length - researchComponents.length,\n    nodeTypes: [...new Set(normalizedNodes.map(n => n.type))]\n  }\n}];"
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Normalize Components",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize circuits and create logical connections\nconst context = $input.first().json;\nconst researchCircuits = context.inputManifest.circuits || [];\nconst normalizedNodes = context.normalizedNodes;\n\nconst normalizedCircuits = [];\nconst edges = [];\nconst circuitIndex = new Map();\n\n// Process research circuits\nresearchCircuits.forEach((circuit, index) => {\n  const circuitId = circuit.id || `circuit_${String(index + 1).padStart(3, '0')}`;\n  \n  // Skip duplicates\n  if (circuitIndex.has(circuitId)) {\n    console.warn(`Duplicate circuit ID found: ${circuitId}`);\n    return;\n  }\n\n  // Normalize circuit\n  const normalizedCircuit = {\n    id: circuitId,\n    label: circuit.label || `Circuit ${index + 1}`,\n    nodes: circuit.components || circuit.nodes || [],\n    voltage: circuit.voltage || '12V',\n    protection: circuit.protection || 'Unknown'\n  };\n\n  // Add optional properties\n  if (circuit.function) normalizedCircuit.function = circuit.function;\n  if (circuit.always_on !== undefined) normalizedCircuit.always_on = circuit.always_on;\n  if (circuit.load_type) normalizedCircuit.load_type = circuit.load_type;\n\n  normalizedCircuits.push(normalizedCircuit);\n  circuitIndex.set(circuitId, normalizedCircuit);\n});\n\n// Create essential circuits if missing\nconst batteryNode = normalizedNodes.find(n => n.type === 'battery');\nconst groundNode = normalizedNodes.find(n => n.type === 'ground');\n\n// Main power circuit\nif (!normalizedCircuits.find(c => c.label.toLowerCase().includes('main') || c.label.toLowerCase().includes('power'))) {\n  const mainPowerCircuit = {\n    id: 'circuit_main_power',\n    label: 'Main Power Circuit',\n    nodes: [batteryNode?.id, groundNode?.id].filter(Boolean),\n    voltage: '12V',\n    protection: 'Main Fuse',\n    function: 'Primary vehicle power distribution',\n    always_on: true,\n    load_type: 'electronic'\n  };\n  normalizedCircuits.unshift(mainPowerCircuit);\n  circuitIndex.set('circuit_main_power', mainPowerCircuit);\n}\n\n// Infer edges from circuit connections and component relationships\nlet edgeId = 1;\n\n// Create edges within circuits\nnormalizedCircuits.forEach(circuit => {\n  if (circuit.nodes && circuit.nodes.length >= 2) {\n    // Create a simple chain connection within circuit\n    for (let i = 0; i < circuit.nodes.length - 1; i++) {\n      const fromNodeId = circuit.nodes[i];\n      const toNodeId = circuit.nodes[i + 1];\n      \n      // Validate nodes exist\n      const fromNode = normalizedNodes.find(n => n.id === fromNodeId);\n      const toNode = normalizedNodes.find(n => n.id === toNodeId);\n      \n      if (fromNode && toNode) {\n        const edge = {\n          id: `edge_${String(edgeId++).padStart(3, '0')}`,\n          from: fromNodeId,\n          to: toNodeId,\n          type: inferConnectionType(fromNode, toNode),\n          circuit: circuit.id\n        };\n        \n        // Add wire properties if can be inferred\n        const wireProps = inferWireProperties(fromNode, toNode, circuit);\n        if (Object.keys(wireProps).length > 0) {\n          edge.properties = wireProps;\n        }\n        \n        edges.push(edge);\n      }\n    }\n  }\n});\n\n// Create essential connections (battery to ground through main fuse if exists)\nif (batteryNode && groundNode) {\n  const mainFuse = normalizedNodes.find(n => n.type === 'fuse' && \n    (n.label.toLowerCase().includes('main') || n.properties?.rating?.includes('60A')));\n  \n  if (mainFuse) {\n    // Battery -> Main Fuse -> Ground\n    edges.unshift(\n      {\n        id: 'edge_battery_main_fuse',\n        from: batteryNode.id,\n        to: mainFuse.id,\n        type: 'power',\n        circuit: 'circuit_main_power',\n        properties: {\n          wireGauge: '6mm²',\n          wireColor: 'red'\n        }\n      },\n      {\n        id: 'edge_main_fuse_ground',\n        from: mainFuse.id,\n        to: groundNode.id,\n        type: 'power', \n        circuit: 'circuit_main_power',\n        properties: {\n          wireGauge: '6mm²',\n          wireColor: 'black'\n        }\n      }\n    );\n  }\n}\n\n// Helper functions\nfunction inferConnectionType(fromNode, toNode) {\n  if (fromNode.type === 'ground' || toNode.type === 'ground') return 'ground';\n  if (fromNode.type === 'sensor' || toNode.type === 'sensor') return 'signal';\n  if (fromNode.type === 'ecu' || toNode.type === 'ecu') return 'data';\n  return 'power';\n}\n\nfunction inferWireProperties(fromNode, toNode, circuit) {\n  const props = {};\n  \n  // Infer wire gauge based on component types and circuit voltage\n  if (fromNode.type === 'battery' || toNode.type === 'battery') {\n    props.wireGauge = '6mm²';\n  } else if (fromNode.type === 'motor' || toNode.type === 'motor') {\n    props.wireGauge = '4mm²';\n  } else if (fromNode.type === 'lamp' || toNode.type === 'lamp') {\n    props.wireGauge = '2.5mm²';\n  } else if (fromNode.type === 'sensor' || toNode.type === 'sensor') {\n    props.wireGauge = '0.5mm²';\n  } else {\n    props.wireGauge = '1.5mm²'; // Default\n  }\n  \n  // Infer wire color\n  if (fromNode.type === 'battery') props.wireColor = 'red';\n  else if (toNode.type === 'ground') props.wireColor = 'black';\n  else if (fromNode.type === 'sensor' || toNode.type === 'sensor') props.wireColor = 'blue';\n  else props.wireColor = 'brown'; // Default\n  \n  return props;\n}\n\nreturn [{\n  ...context,\n  normalizedCircuits,\n  edges,\n  circuitStats: {\n    originalCircuits: researchCircuits.length,\n    normalizedCircuits: normalizedCircuits.length,\n    generatedEdges: edges.length,\n    circuitTypes: [...new Set(normalizedCircuits.map(c => c.load_type || 'unknown'))]\n  }\n}];"
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Normalize Circuits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build final ElectroGraph from normalized components\nconst context = $input.first().json;\n\n// Build the complete ElectroGraph structure\nconst electroGraph = {\n  vehicleId: context.vehicleSig,\n  metadata: context.metadata,\n  nodes: context.normalizedNodes,\n  edges: context.edges,\n  circuits: context.normalizedCircuits\n};\n\n// Add processing statistics\nconst processingStats = {\n  normalization: {\n    inputSources: context.stats.inputSources,\n    inputComponents: context.stats.inputComponents,\n    inputCircuits: context.stats.inputCircuits,\n    outputNodes: electroGraph.nodes.length,\n    outputEdges: electroGraph.edges.length,\n    outputCircuits: electroGraph.circuits.length,\n    inputConfidence: context.stats.confidence\n  },\n  components: context.normalizationStats,\n  circuits: context.circuitStats,\n  timestamp: new Date().toISOString()\n};\n\n// Validate basic graph integrity\nconst validationIssues = [];\n\n// Check for orphaned nodes (nodes not in any circuit)\nconst nodesInCircuits = new Set();\nelectroGraph.circuits.forEach(circuit => {\n  circuit.nodes?.forEach(nodeId => nodesInCircuits.add(nodeId));\n});\n\nconst orphanedNodes = electroGraph.nodes.filter(node => !nodesInCircuits.has(node.id));\nif (orphanedNodes.length > 0) {\n  validationIssues.push(`${orphanedNodes.length} orphaned nodes found`);\n}\n\n// Check for dangling edges (edges referencing non-existent nodes)\nconst nodeIds = new Set(electroGraph.nodes.map(n => n.id));\nconst danglingEdges = electroGraph.edges.filter(edge => \n  !nodeIds.has(edge.from) || !nodeIds.has(edge.to)\n);\nif (danglingEdges.length > 0) {\n  validationIssues.push(`${danglingEdges.length} dangling edges found`);\n}\n\n// Check for essential components\nconst hasBattery = electroGraph.nodes.some(n => n.type === 'battery');\nconst hasGround = electroGraph.nodes.some(n => n.type === 'ground');\nif (!hasB battery) validationIssues.push('No battery node found');\nif (!hasGround) validationIssues.push('No ground node found');\n\nreturn [{\n  electroGraph,\n  processingStats,\n  validationIssues,\n  jobId: context.jobId,\n  vehicleSig: context.vehicleSig,\n  success: validationIssues.length === 0,\n  quality: {\n    completeness: (electroGraph.nodes.length + electroGraph.edges.length + electroGraph.circuits.length) / 10, // Simple metric\n    connectivity: electroGraph.edges.length / Math.max(1, electroGraph.nodes.length),\n    circuitCoverage: nodesInCircuits.size / Math.max(1, electroGraph.nodes.length)\n  }\n}];"
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Build ElectroGraph",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.ajv-validate",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Validate ElectroGraph",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "leftValue": "={{ $('Validate ElectroGraph').item.json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Check Validation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Build ElectroGraph'].json.INGEST_URL || 'http://ingest:3001' }}/normalized/electrograph",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Vehicle-Sig",
+              "value": "={{ $('Build ElectroGraph').item.json.vehicleSig }}"
+            },
+            {
+              "name": "X-Job-ID",
+              "value": "={{ $('Build ElectroGraph').item.json.jobId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{ $('Build ElectroGraph').item.json.electroGraph }}"
+            },
+            {
+              "name": "jobId",
+              "value": "={{ $('Build ElectroGraph').item.json.jobId }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3,
+            "waitBetween": 1000
+          }
+        }
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Store ElectroGraph",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "resource": "subWorkflow",
+        "subWorkflow": {
+          "__rl": true,
+          "value": "sub.emit-lake-event",
+          "mode": "name"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Emit Normalization Event",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+              "name": "electroGraph",
+              "value": "={{ $('Build ElectroGraph').item.json.electroGraph }}",
+              "type": "object"
+            },
+            {
+              "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+              "name": "processingStats",
+              "value": "={{ $('Build ElectroGraph').item.json.processingStats }}",
+              "type": "object"
+            },
+            {
+              "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+              "name": "quality",
+              "value": "={{ $('Build ElectroGraph').item.json.quality }}",
+              "type": "object"
+            },
+            {
+              "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+              "name": "validationIssues",
+              "value": "={{ $('Build ElectroGraph').item.json.validationIssues }}",
+              "type": "array"
+            },
+            {
+              "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+              "name": "storagePath",
+              "value": "={{ $('Store ElectroGraph').item.json.storagePath }}",
+              "type": "string"
+            },
+            {
+              "id": "p6q7r8s9-t0u1-2345-pqrs-678901234567",
+              "name": "jobId",
+              "value": "={{ $('Build ElectroGraph').item.json.jobId }}",
+              "type": "string"
+            },
+            {
+              "id": "q7r8s9t0-u1v2-3456-qrst-789012345678",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "r8s9t0u1-v2w3-4567-rstu-890123456789",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s9t0u1v2-w3x4-5678-stuv-901234567890",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "t0u1v2w3-x4y5-6789-tuvw-012345678901",
+              "name": "error",
+              "value": "SCHEMA_VALIDATION_FAILED",
+              "type": "string"
+            },
+            {
+              "id": "u1v2w3x4-y5z6-7890-uvwx-123456789012",
+              "name": "message",
+              "value": "ElectroGraph failed schema validation",
+              "type": "string"
+            },
+            {
+              "id": "v2w3x4y5-z6a7-8901-vwxy-234567890123",
+              "name": "validationErrors",
+              "value": "={{ $('Validate ElectroGraph').item.json.errors }}",
+              "type": "array"
+            },
+            {
+              "id": "w3x4y5z6-a7b8-9012-wxyz-345678901234",
+              "name": "jobId",
+              "value": "={{ $('Build ElectroGraph').item.json.jobId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "x4y5z6a7-b8c9-0123-xyza-456789012345",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1780, 400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initialize Normalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Normalization": {
+      "main": [
+        [
+          {
+            "node": "Normalize Components",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Components": {
+      "main": [
+        [
+          {
+            "node": "Normalize Circuits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Circuits": {
+      "main": [
+        [
+          {
+            "node": "Build ElectroGraph",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build ElectroGraph": {
+      "main": [
+        [
+          {
+            "node": "Validate ElectroGraph",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate ElectroGraph": {
+      "main": [
+        [
+          {
+            "node": "Check Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation": {
+      "main": [
+        [
+          {
+            "node": "Store ElectroGraph",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store ElectroGraph": {
+      "main": [
+        [
+          {
+            "node": "Emit Normalization Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emit Normalization Event": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8h9i0j1k-2l3m-4567-8901-234567ijklmn",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "normalize-subflow"
+  },
+  "id": "normalize-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T18:10:00.000Z",
+      "updatedAt": "2025-10-08T18:10:00.000Z",
+      "id": "normalization",
+      "name": "normalization"
+    }
+  ]
+}

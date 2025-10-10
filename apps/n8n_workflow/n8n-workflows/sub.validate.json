@@ -1,0 +1,186 @@
+{
+  "name": "sub.validate",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Graph structure validation\nconst input = $input.first().json;\nconst { graph, strictMode = false, includeHeuristics = true } = input;\n\nif (!graph || !graph.nodes || !graph.edges) {\n  return [{\n    valid: false,\n    errors: ['Missing required graph structure (nodes, edges)'],\n    warnings: [],\n    metrics: { nodeCount: 0, edgeCount: 0 }\n  }];\n}\n\nconst errors = [];\nconst warnings = [];\nconst info = [];\n\n// Basic structure validation\nconst nodes = Array.isArray(graph.nodes) ? graph.nodes : [];\nconst edges = Array.isArray(graph.edges) ? graph.edges : [];\nconst circuits = Array.isArray(graph.circuits) ? graph.circuits : [];\n\n// Node validation\nconst nodeIds = new Set();\nconst duplicateNodes = [];\n\nnodes.forEach((node, index) => {\n  if (!node.id) {\n    errors.push(`Node ${index}: missing id`);\n    return;\n  }\n  \n  if (nodeIds.has(node.id)) {\n    duplicateNodes.push(node.id);\n    errors.push(`Duplicate node id: ${node.id}`);\n  } else {\n    nodeIds.add(node.id);\n  }\n  \n  if (!node.type) {\n    errors.push(`Node ${node.id}: missing type`);\n  }\n  \n  if (!node.label) {\n    errors.push(`Node ${node.id}: missing label`);\n  }\n  \n  // Type validation\n  const validTypes = [\n    'battery', 'fuse', 'relay', 'connector', 'ecu', 'sensor',\n    'actuator', 'lamp', 'motor', 'splice', 'ground', 'terminal'\n  ];\n  \n  if (node.type && !validTypes.includes(node.type)) {\n    warnings.push(`Node ${node.id}: unknown type '${node.type}'`);\n  }\n  \n  // Zone validation\n  const validZones = ['engine', 'dash', 'interior', 'trunk', 'exterior'];\n  if (node.zone && !validZones.includes(node.zone)) {\n    warnings.push(`Node ${node.id}: unknown zone '${node.zone}'`);\n  }\n});\n\n// Edge validation\nconst edgeIds = new Set();\nconst orphanedEdges = [];\n\nedges.forEach((edge, index) => {\n  if (!edge.id) {\n    errors.push(`Edge ${index}: missing id`);\n    return;\n  }\n  \n  if (edgeIds.has(edge.id)) {\n    errors.push(`Duplicate edge id: ${edge.id}`);\n  } else {\n    edgeIds.add(edge.id);\n  }\n  \n  if (!edge.from || !edge.to) {\n    errors.push(`Edge ${edge.id}: missing from/to nodes`);\n    return;\n  }\n  \n  // Check if referenced nodes exist\n  if (!nodeIds.has(edge.from)) {\n    orphanedEdges.push(edge.id);\n    errors.push(`Edge ${edge.id}: references non-existent 'from' node ${edge.from}`);\n  }\n  \n  if (!nodeIds.has(edge.to)) {\n    orphanedEdges.push(edge.id);\n    errors.push(`Edge ${edge.id}: references non-existent 'to' node ${edge.to}`);\n  }\n  \n  // Wire validation\n  if (edge.wire) {\n    if (edge.wire.gauge && !['0.5mm²', '1mm²', '2.5mm²', '4mm²', '6mm²', '10mm²', '16mm²', '25mm²'].includes(edge.wire.gauge)) {\n      warnings.push(`Edge ${edge.id}: unusual wire gauge '${edge.wire.gauge}'`);\n    }\n    \n    if (edge.wire.voltage && !['5V', '12V', '24V', '400V'].includes(edge.wire.voltage)) {\n      warnings.push(`Edge ${edge.id}: unusual voltage '${edge.wire.voltage}'`);\n    }\n  }\n});\n\n// Circuit validation\ncircuits.forEach((circuit, index) => {\n  if (!circuit.id) {\n    errors.push(`Circuit ${index}: missing id`);\n    return;\n  }\n  \n  if (!circuit.label) {\n    errors.push(`Circuit ${circuit.id}: missing label`);\n  }\n  \n  if (circuit.nodes && Array.isArray(circuit.nodes)) {\n    circuit.nodes.forEach(nodeId => {\n      if (!nodeIds.has(nodeId)) {\n        errors.push(`Circuit ${circuit.id}: references non-existent node ${nodeId}`);\n      }\n    });\n  }\n});\n\nconst metrics = {\n  nodeCount: nodes.length,\n  edgeCount: edges.length,\n  circuitCount: circuits.length,\n  duplicateNodes: duplicateNodes.length,\n  orphanedEdges: orphanedEdges.length,\n  nodeTypes: [...new Set(nodes.map(n => n.type).filter(Boolean))],\n  zones: [...new Set(nodes.map(n => n.zone).filter(Boolean))]\n};\n\nreturn [{\n  valid: errors.length === 0,\n  errors,\n  warnings,\n  info,\n  metrics,\n  strictMode,\n  includeHeuristics\n}];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Structure Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+              "leftValue": "={{ $('Structure Validation').item.json.includeHeuristics }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Check Heuristics",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Electrical system heuristics validation\nconst input = $input.first().json;\nconst previousValidation = $('Structure Validation').first().json;\nconst { graph } = input;\n\nconst errors = [...previousValidation.errors];\nconst warnings = [...previousValidation.warnings];\nconst info = [...previousValidation.info];\n\nif (!graph || !graph.nodes) {\n  return [{ ...previousValidation, heuristicsApplied: false }];\n}\n\nconst nodes = graph.nodes;\nconst edges = graph.edges || [];\n\n// Electrical system heuristics\nconst batteryNodes = nodes.filter(n => n.type === 'battery');\nconst groundNodes = nodes.filter(n => n.type === 'ground');\nconst fuseNodes = nodes.filter(n => n.type === 'fuse');\nconst relayNodes = nodes.filter(n => n.type === 'relay');\nconst connectorNodes = nodes.filter(n => n.type === 'connector');\n\n// H1: System should have at least one battery\nif (batteryNodes.length === 0) {\n  warnings.push('No battery nodes found - electrical system typically requires power source');\n} else if (batteryNodes.length > 3) {\n  warnings.push(`Unusual number of batteries (${batteryNodes.length}) - verify if correct`);\n}\n\n// H2: System should have ground points\nif (groundNodes.length === 0) {\n  warnings.push('No ground nodes found - electrical system requires ground references');\n}\n\n// H3: Fuses should protect circuits\nif (fuseNodes.length === 0) {\n  warnings.push('No fuse nodes found - electrical system should have circuit protection');\n}\n\n// H4: Check for isolated nodes (no connections)\nconst connectedNodeIds = new Set();\nedges.forEach(edge => {\n  connectedNodeIds.add(edge.from);\n  connectedNodeIds.add(edge.to);\n});\n\nconst isolatedNodes = nodes.filter(node => !connectedNodeIds.has(node.id));\nif (isolatedNodes.length > 0) {\n  warnings.push(`Found ${isolatedNodes.length} isolated nodes: ${isolatedNodes.map(n => n.id).join(', ')}`);\n}\n\n// H5: Battery should connect to main fuse/distribution\nconst batteryConnections = edges.filter(e => \n  batteryNodes.some(b => b.id === e.from || b.id === e.to)\n);\nif (batteryNodes.length > 0 && batteryConnections.length === 0) {\n  warnings.push('Battery nodes have no connections - verify wiring');\n}\n\n// H6: High-current components should have appropriate wire gauge\nconst highCurrentTypes = ['motor', 'actuator', 'lamp'];\nedges.forEach(edge => {\n  const fromNode = nodes.find(n => n.id === edge.from);\n  const toNode = nodes.find(n => n.id === edge.to);\n  \n  if ((highCurrentTypes.includes(fromNode?.type) || highCurrentTypes.includes(toNode?.type)) &&\n      edge.wire?.gauge && ['0.5mm²', '1mm²'].includes(edge.wire.gauge)) {\n    warnings.push(`Edge ${edge.id}: thin wire (${edge.wire.gauge}) for high-current component`);\n  }\n});\n\n// H7: ECU/sensor connections should be low voltage\nconst lowVoltageTypes = ['ecu', 'sensor'];\nedges.forEach(edge => {\n  const fromNode = nodes.find(n => n.id === edge.from);\n  const toNode = nodes.find(n => n.id === edge.to);\n  \n  if ((lowVoltageTypes.includes(fromNode?.type) || lowVoltageTypes.includes(toNode?.type)) &&\n      edge.wire?.voltage && !['5V', '12V'].includes(edge.wire.voltage)) {\n    warnings.push(`Edge ${edge.id}: high voltage (${edge.wire.voltage}) for ECU/sensor connection`);\n  }\n});\n\n// H8: Relay coil vs contact validation\nrelayNodes.forEach(relay => {\n  const relayEdges = edges.filter(e => e.from === relay.id || e.to === relay.id);\n  if (relayEdges.length < 4) {\n    info.push(`Relay ${relay.id}: has ${relayEdges.length} connections (typical relay has 4-5 pins)`);\n  }\n});\n\n// H9: Zone consistency check\nconst zoneConnections = {};\nedges.forEach(edge => {\n  const fromNode = nodes.find(n => n.id === edge.from);\n  const toNode = nodes.find(n => n.id === edge.to);\n  \n  if (fromNode?.zone && toNode?.zone && fromNode.zone !== toNode.zone) {\n    const key = [fromNode.zone, toNode.zone].sort().join('-');\n    zoneConnections[key] = (zoneConnections[key] || 0) + 1;\n  }\n});\n\nObject.entries(zoneConnections).forEach(([zones, count]) => {\n  if (count > 10) {\n    info.push(`High inter-zone connectivity: ${zones} (${count} connections)`);\n  }\n});\n\n// H10: Circuit completeness\nconst circuits = graph.circuits || [];\ncircuits.forEach(circuit => {\n  if (!circuit.nodes || circuit.nodes.length < 2) {\n    warnings.push(`Circuit ${circuit.id}: incomplete (needs at least 2 nodes)`);\n  }\n  \n  // Check if circuit has both power source and load\n  const circuitNodes = circuit.nodes.map(id => nodes.find(n => n.id === id)).filter(Boolean);\n  const hasPowerSource = circuitNodes.some(n => ['battery', 'fuse'].includes(n.type));\n  const hasLoad = circuitNodes.some(n => ['motor', 'lamp', 'actuator', 'ecu'].includes(n.type));\n  \n  if (!hasPowerSource) {\n    warnings.push(`Circuit ${circuit.id}: no clear power source`);\n  }\n  if (!hasLoad) {\n    warnings.push(`Circuit ${circuit.id}: no clear electrical load`);\n  }\n});\n\nconst heuristicMetrics = {\n  batteryCount: batteryNodes.length,\n  groundCount: groundNodes.length,\n  fuseCount: fuseNodes.length,\n  relayCount: relayNodes.length,\n  isolatedNodeCount: isolatedNodes.length,\n  interZoneConnections: Object.keys(zoneConnections).length,\n  completeCircuits: circuits.filter(c => c.nodes && c.nodes.length >= 2).length\n};\n\nreturn [{\n  ...previousValidation,\n  errors,\n  warnings,\n  info,\n  heuristicsApplied: true,\n  heuristicMetrics,\n  metrics: {\n    ...previousValidation.metrics,\n    ...heuristicMetrics\n  }\n}];"
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Electrical Heuristics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Component relationship validation\nconst input = $input.first().json;\nconst previousValidation = $('Structure Validation').first().json;\nconst { graph } = input;\n\nconst errors = [...previousValidation.errors];\nconst warnings = [...previousValidation.warnings];\nconst info = [...previousValidation.info];\n\nif (!graph || !graph.nodes || !graph.edges) {\n  return [{ ...previousValidation, relationshipValidation: false }];\n}\n\nconst nodes = graph.nodes;\nconst edges = graph.edges;\n\n// Build adjacency map for relationship analysis\nconst adjacency = {};\nnodes.forEach(node => {\n  adjacency[node.id] = { in: [], out: [], bidirectional: [] };\n});\n\nedges.forEach(edge => {\n  if (adjacency[edge.from] && adjacency[edge.to]) {\n    adjacency[edge.from].out.push({ nodeId: edge.to, edge });\n    adjacency[edge.to].in.push({ nodeId: edge.from, edge });\n  }\n});\n\n// R1: Battery relationship rules\nnodes.filter(n => n.type === 'battery').forEach(battery => {\n  const connections = adjacency[battery.id];\n  const totalConnections = connections.in.length + connections.out.length;\n  \n  if (totalConnections === 0) {\n    errors.push(`Battery ${battery.id}: not connected to any components`);\n  } else if (totalConnections === 1) {\n    warnings.push(`Battery ${battery.id}: only one connection (typically needs positive and negative)`);\n  }\n  \n  // Check if battery connects to fuse/distribution\n  const connectsToFuse = [...connections.in, ...connections.out]\n    .some(conn => {\n      const connectedNode = nodes.find(n => n.id === conn.nodeId);\n      return connectedNode && ['fuse', 'connector'].includes(connectedNode.type);\n    });\n  \n  if (!connectsToFuse && totalConnections > 0) {\n    warnings.push(`Battery ${battery.id}: should connect through fuse or distribution point`);\n  }\n});\n\n// R2: Fuse relationship rules\nnodes.filter(n => n.type === 'fuse').forEach(fuse => {\n  const connections = adjacency[fuse.id];\n  const totalConnections = connections.in.length + connections.out.length;\n  \n  if (totalConnections < 2) {\n    warnings.push(`Fuse ${fuse.id}: should have input and output connections`);\n  }\n  \n  // Check fuse placement (should be between power source and load)\n  const inputTypes = connections.in.map(conn => {\n    const node = nodes.find(n => n.id === conn.nodeId);\n    return node?.type;\n  });\n  \n  const outputTypes = connections.out.map(conn => {\n    const node = nodes.find(n => n.id === conn.nodeId);\n    return node?.type;\n  });\n  \n  const hasPowerInput = inputTypes.some(type => ['battery', 'connector'].includes(type));\n  const hasLoadOutput = outputTypes.some(type => ['motor', 'lamp', 'ecu', 'actuator'].includes(type));\n  \n  if (!hasPowerInput && !hasLoadOutput) {\n    info.push(`Fuse ${fuse.id}: verify power source and load connections`);\n  }\n});\n\n// R3: Relay relationship rules\nnodes.filter(n => n.type === 'relay').forEach(relay => {\n  const connections = adjacency[relay.id];\n  const totalConnections = connections.in.length + connections.out.length;\n  \n  if (totalConnections < 3) {\n    warnings.push(`Relay ${relay.id}: insufficient connections (needs coil + contact circuit)`);\n  } else if (totalConnections > 6) {\n    warnings.push(`Relay ${relay.id}: excessive connections (${totalConnections}) for typical relay`);\n  }\n});\n\n// R4: ECU relationship rules\nnodes.filter(n => n.type === 'ecu').forEach(ecu => {\n  const connections = adjacency[ecu.id];\n  const connectedTypes = [...connections.in, ...connections.out]\n    .map(conn => {\n      const node = nodes.find(n => n.id === conn.nodeId);\n      return node?.type;\n    })\n    .filter(Boolean);\n  \n  const hasPower = connectedTypes.includes('fuse') || connectedTypes.includes('battery');\n  const hasGround = connectedTypes.includes('ground');\n  const hasSensors = connectedTypes.includes('sensor');\n  \n  if (!hasPower) {\n    warnings.push(`ECU ${ecu.id}: no clear power connection`);\n  }\n  if (!hasGround) {\n    warnings.push(`ECU ${ecu.id}: no ground connection`);\n  }\n  if (!hasSensors && connectedTypes.length > 2) {\n    info.push(`ECU ${ecu.id}: no sensor connections found`);\n  }\n});\n\n// R5: Ground distribution analysis\nconst groundNodes = nodes.filter(n => n.type === 'ground');\nif (groundNodes.length > 0) {\n  groundNodes.forEach(ground => {\n    const connections = adjacency[ground.id];\n    const totalConnections = connections.in.length + connections.out.length;\n    \n    if (totalConnections === 0) {\n      warnings.push(`Ground ${ground.id}: not connected to any components`);\n    } else if (totalConnections > 10) {\n      info.push(`Ground ${ground.id}: serves many components (${totalConnections}) - verify capacity`);\n    }\n  });\n}\n\n// R6: Connector validation\nnodes.filter(n => n.type === 'connector').forEach(connector => {\n  const connections = adjacency[connector.id];\n  const totalConnections = connections.in.length + connections.out.length;\n  \n  if (totalConnections < 2) {\n    warnings.push(`Connector ${connector.id}: should connect multiple circuits`);\n  }\n  \n  // Check for zone bridging\n  const zones = [...connections.in, ...connections.out]\n    .map(conn => {\n      const node = nodes.find(n => n.id === conn.nodeId);\n      return node?.zone;\n    })\n    .filter(Boolean);\n  \n  const uniqueZones = [...new Set(zones)];\n  if (uniqueZones.length > 2) {\n    info.push(`Connector ${connector.id}: bridges multiple zones (${uniqueZones.join(', ')})`);\n  }\n});\n\n// R7: Circuit path validation\nconst circuits = graph.circuits || [];\ncircuits.forEach(circuit => {\n  if (!circuit.nodes || circuit.nodes.length < 2) return;\n  \n  // Check if circuit nodes form connected paths\n  const circuitEdges = edges.filter(edge => \n    circuit.nodes.includes(edge.from) && circuit.nodes.includes(edge.to)\n  );\n  \n  if (circuitEdges.length < circuit.nodes.length - 1) {\n    warnings.push(`Circuit ${circuit.id}: nodes may not form connected path`);\n  }\n});\n\nconst relationshipMetrics = {\n  connectedComponentRatio: (nodes.length - nodes.filter(n => {\n    const connections = adjacency[n.id];\n    return connections.in.length + connections.out.length === 0;\n  }).length) / nodes.length,\n  avgConnectionsPerNode: edges.length * 2 / nodes.length,\n  maxNodeConnections: Math.max(...nodes.map(n => {\n    const connections = adjacency[n.id];\n    return connections.in.length + connections.out.length;\n  })),\n  groundDistributionRatio: groundNodes.length > 0 ? \n    nodes.filter(n => n.type !== 'ground').length / groundNodes.length : 0\n};\n\nreturn [{\n  ...previousValidation,\n  errors,\n  warnings,\n  info,\n  relationshipValidation: true,\n  relationshipMetrics,\n  metrics: {\n    ...previousValidation.metrics,\n    ...relationshipMetrics\n  }\n}];"
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Skip Heuristics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+              "name": "validationResult",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+              "name": "validationVersion",
+              "value": "1.0.0",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Structure Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Validation": {
+      "main": [
+        [
+          {
+            "node": "Check Heuristics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Heuristics": {
+      "main": [
+        [
+          {
+            "node": "Electrical Heuristics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Heuristics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Electrical Heuristics": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Heuristics": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8h9i0j1k-2l3m-4567-8901-234567ijklmn",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "validate-subflow"
+  },
+  "id": "validate-subflow",
+  "tags": [
+    {
+      "createdAt": "2025-10-08T18:15:00.000Z",
+      "updatedAt": "2025-10-08T18:15:00.000Z",
+      "id": "validation",
+      "name": "validation"
+    }
+  ]
+}
