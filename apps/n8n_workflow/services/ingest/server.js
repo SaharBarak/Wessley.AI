@@ -325,9 +325,10 @@ app.delete('/cache/:key', async (req, res) => {
  * Manual review queue
  */
 app.post('/manual-review', [
-  body('errorPayload').isObject().withMessage('errorPayload must be an object'),
+  body('item').optional().isObject().withMessage('item must be an object'),
+  body('errorPayload').optional().isObject().withMessage('errorPayload must be an object'),
   body('priority').optional().isIn(['low', 'normal', 'high']).withMessage('priority must be low, normal, or high'),
-  body('category').isString().notEmpty().withMessage('category is required')
+  body('category').optional().isString().withMessage('category must be a string')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -338,14 +339,28 @@ app.post('/manual-review', [
       });
     }
 
-    const { errorPayload, priority = 'normal', category } = req.body;
+    // Support both formats: direct item from LLM workflow and generic errorPayload
+    let reviewPayload, priority, category;
     
-    const result = await eventProcessor.queueManualReview(errorPayload, priority, category);
+    if (req.body.item) {
+      // Format from LLM metadata workflow
+      reviewPayload = req.body.item;
+      priority = reviewPayload.confidence < 0.5 ? 'high' : 'normal';
+      category = 'llm_metadata_enrichment';
+    } else {
+      // Generic manual review format
+      reviewPayload = req.body.errorPayload;
+      priority = req.body.priority || 'normal';
+      category = req.body.category || 'general';
+    }
+    
+    const result = await eventProcessor.queueManualReview(reviewPayload, priority, category);
     
     res.json({
       success: true,
       reviewId: result.reviewId,
       priority: result.priority,
+      category: result.category,
       timestamp: new Date().toISOString()
     });
 
