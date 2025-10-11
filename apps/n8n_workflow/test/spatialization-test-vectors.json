@@ -1,0 +1,398 @@
+{
+  "testName": "Spatialization & 3D Layout Test Vectors",
+  "description": "Test data for PR7 spatialization and 3D layout system",
+  "version": "1.0.0",
+  "testCases": [
+    {
+      "id": "test_case_1",
+      "description": "Simple electrical system spatialization",
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {
+              "id": "battery_main",
+              "type": "battery",
+              "label": "Main Battery",
+              "zone": "engine",
+              "properties": {
+                "voltage": "12V",
+                "capacity": "70Ah"
+              }
+            },
+            {
+              "id": "fuse_main_60a",
+              "type": "fuse",
+              "label": "Main 60A Fuse", 
+              "zone": "engine",
+              "properties": {
+                "rating": "60A"
+              }
+            },
+            {
+              "id": "relay_starter",
+              "type": "relay",
+              "label": "Starter Relay",
+              "zone": "engine",
+              "properties": {
+                "type": "4_pin"
+              }
+            },
+            {
+              "id": "ecu_engine",
+              "type": "ecu",
+              "label": "Engine ECU",
+              "zone": "dash",
+              "properties": {
+                "type": "engine_management"
+              }
+            },
+            {
+              "id": "ground_g101",
+              "type": "ground",
+              "label": "G101 Ground Point",
+              "zone": "engine",
+              "properties": {
+                "location": "engine_block"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge_1",
+              "from": "battery_main",
+              "to": "fuse_main_60a",
+              "type": "power",
+              "properties": {
+                "wireGauge": "6mm²",
+                "wireColor": "red"
+              }
+            },
+            {
+              "id": "edge_2",
+              "from": "fuse_main_60a", 
+              "to": "relay_starter",
+              "type": "power",
+              "properties": {
+                "wireGauge": "4mm²",
+                "wireColor": "red"
+              }
+            },
+            {
+              "id": "edge_3",
+              "from": "relay_starter",
+              "to": "ecu_engine",
+              "type": "signal",
+              "properties": {
+                "wireGauge": "1mm²",
+                "wireColor": "blue"
+              }
+            },
+            {
+              "id": "edge_4",
+              "from": "ecu_engine",
+              "to": "ground_g101",
+              "type": "ground",
+              "properties": {
+                "wireGauge": "2.5mm²",
+                "wireColor": "black"
+              }
+            }
+          ],
+          "circuits": [
+            {
+              "id": "circuit_starter",
+              "name": "Starter Circuit",
+              "function": "Engine starting system",
+              "nodes": ["battery_main", "fuse_main_60a", "relay_starter", "ground_g101"]
+            },
+            {
+              "id": "circuit_ecu",
+              "name": "ECU Power Circuit", 
+              "function": "Engine management power",
+              "nodes": ["relay_starter", "ecu_engine", "ground_g101"]
+            }
+          ]
+        },
+        "nodeMetadata": [
+          {
+            "nodeId": "battery_main",
+            "confidence": 0.95,
+            "evidence": [
+              {
+                "text": "12V 70Ah lead-acid battery mounted in engine bay",
+                "source": "service_manual",
+                "confidence": 0.95
+              }
+            ],
+            "function": "Primary power source",
+            "specifications": {
+              "voltage": "12V",
+              "current": "70Ah"
+            },
+            "location": {
+              "zone": "engine",
+              "mounting": "battery_tray",
+              "access": "easy"
+            }
+          },
+          {
+            "nodeId": "fuse_main_60a",
+            "confidence": 0.92,
+            "evidence": [
+              {
+                "text": "60A main fuse protects primary electrical circuits",
+                "source": "wiring_diagram",
+                "confidence": 0.92
+              }
+            ],
+            "function": "Circuit protection",
+            "specifications": {
+              "voltage": "12V",
+              "current": "60A"
+            },
+            "location": {
+              "zone": "engine",
+              "mounting": "fuse_box",
+              "access": "easy"
+            }
+          }
+        ],
+        "vehicleSignature": "hyundai_galloper_2000_basic"
+      },
+      "expectedOutput": {
+        "electroGraph3D": {
+          "vehicleId": "hyundai_galloper_2000_basic",
+          "metadata": {
+            "brand": "hyundai",
+            "model": "galloper", 
+            "year": 2000,
+            "boundingBox": {
+              "min": [-2.5, -1.0, -0.5],
+              "max": [2.5, 1.0, 2.0]
+            },
+            "scale": 1.0
+          },
+          "nodes": 5,
+          "routes": 4,
+          "circuits": 2
+        },
+        "performance": {
+          "nodeCount": 5,
+          "routeCount": 4,
+          "circuitCount": 2
+        }
+      }
+    },
+    {
+      "id": "test_case_2",
+      "description": "Multi-zone electrical system with complex routing",
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {
+              "id": "battery_main",
+              "type": "battery",
+              "label": "Main Battery",
+              "zone": "engine"
+            },
+            {
+              "id": "alternator",
+              "type": "actuator",
+              "label": "Alternator",
+              "zone": "engine"
+            },
+            {
+              "id": "fuse_box_main",
+              "type": "connector",
+              "label": "Main Fuse Box",
+              "zone": "engine"
+            },
+            {
+              "id": "fuse_box_dash",
+              "type": "connector",
+              "label": "Dashboard Fuse Box",
+              "zone": "dash"
+            },
+            {
+              "id": "headlight_left",
+              "type": "lamp",
+              "label": "Left Headlight",
+              "zone": "exterior"
+            },
+            {
+              "id": "headlight_right", 
+              "type": "lamp",
+              "label": "Right Headlight",
+              "zone": "exterior"
+            },
+            {
+              "id": "taillight_left",
+              "type": "lamp",
+              "label": "Left Taillight",
+              "zone": "exterior"
+            },
+            {
+              "id": "radio_head_unit",
+              "type": "ecu",
+              "label": "Radio Head Unit",
+              "zone": "dash"
+            },
+            {
+              "id": "ground_engine",
+              "type": "ground",
+              "label": "Engine Ground",
+              "zone": "engine"
+            },
+            {
+              "id": "ground_body",
+              "type": "ground",
+              "label": "Body Ground",
+              "zone": "interior"
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge_1",
+              "from": "battery_main",
+              "to": "fuse_box_main",
+              "type": "power",
+              "properties": {"wireGauge": "10mm²", "wireColor": "red"}
+            },
+            {
+              "id": "edge_2",
+              "from": "fuse_box_main",
+              "to": "fuse_box_dash",
+              "type": "power",
+              "properties": {"wireGauge": "6mm²", "wireColor": "red"}
+            },
+            {
+              "id": "edge_3",
+              "from": "fuse_box_dash",
+              "to": "headlight_left",
+              "type": "power",
+              "properties": {"wireGauge": "2.5mm²", "wireColor": "white"}
+            },
+            {
+              "id": "edge_4",
+              "from": "fuse_box_dash",
+              "to": "headlight_right",
+              "type": "power", 
+              "properties": {"wireGauge": "2.5mm²", "wireColor": "white"}
+            },
+            {
+              "id": "edge_5",
+              "from": "fuse_box_dash",
+              "to": "radio_head_unit",
+              "type": "power",
+              "properties": {"wireGauge": "1mm²", "wireColor": "yellow"}
+            }
+          ],
+          "circuits": [
+            {
+              "id": "circuit_lighting",
+              "name": "Lighting Circuit",
+              "function": "Vehicle lighting system",
+              "nodes": ["fuse_box_dash", "headlight_left", "headlight_right", "taillight_left"]
+            },
+            {
+              "id": "circuit_power_distribution",
+              "name": "Power Distribution",
+              "function": "Main power distribution",
+              "nodes": ["battery_main", "fuse_box_main", "fuse_box_dash"]
+            }
+          ]
+        },
+        "nodeMetadata": [],
+        "vehicleSignature": "ford_f150_2005_v8"
+      },
+      "expectedOutput": {
+        "electroGraph3D": {
+          "vehicleId": "ford_f150_2005_v8",
+          "nodes": 10,
+          "routes": 5,
+          "circuits": 2
+        },
+        "performance": {
+          "nodeCount": 10,
+          "routeCount": 5,
+          "circuitCount": 2
+        }
+      }
+    },
+    {
+      "id": "test_case_3",
+      "description": "Dense component layout optimization",
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {"id": "relay_1", "type": "relay", "label": "Relay 1", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_2", "type": "relay", "label": "Relay 2", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_3", "type": "relay", "label": "Relay 3", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_4", "type": "relay", "label": "Relay 4", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_5", "type": "relay", "label": "Relay 5", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_6", "type": "relay", "label": "Relay 6", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_7", "type": "relay", "label": "Relay 7", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_8", "type": "relay", "label": "Relay 8", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_9", "type": "relay", "label": "Relay 9", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_10", "type": "relay", "label": "Relay 10", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_11", "type": "relay", "label": "Relay 11", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_12", "type": "relay", "label": "Relay 12", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_13", "type": "relay", "label": "Relay 13", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_14", "type": "relay", "label": "Relay 14", "zone": "engine", "properties": {"type": "4_pin"}},
+            {"id": "relay_15", "type": "relay", "label": "Relay 15", "zone": "engine", "properties": {"type": "4_pin"}}
+          ],
+          "edges": [
+            {"id": "edge_1", "from": "relay_1", "to": "relay_2", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_2", "from": "relay_2", "to": "relay_3", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_3", "from": "relay_3", "to": "relay_4", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_4", "from": "relay_4", "to": "relay_5", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_5", "from": "relay_5", "to": "relay_6", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_6", "from": "relay_6", "to": "relay_7", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_7", "from": "relay_7", "to": "relay_8", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_8", "from": "relay_8", "to": "relay_9", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_9", "from": "relay_9", "to": "relay_10", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_10", "from": "relay_10", "to": "relay_11", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_11", "from": "relay_11", "to": "relay_12", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_12", "from": "relay_12", "to": "relay_13", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_13", "from": "relay_13", "to": "relay_14", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}},
+            {"id": "edge_14", "from": "relay_14", "to": "relay_15", "type": "signal", "properties": {"wireGauge": "1mm²", "wireColor": "blue"}}
+          ],
+          "circuits": [
+            {
+              "id": "circuit_relays",
+              "name": "Relay Chain",
+              "function": "Sequential relay control",
+              "nodes": ["relay_1", "relay_2", "relay_3", "relay_4", "relay_5", "relay_6", "relay_7", "relay_8", "relay_9", "relay_10", "relay_11", "relay_12", "relay_13", "relay_14", "relay_15"]
+            }
+          ]
+        },
+        "nodeMetadata": [],
+        "vehicleSignature": "test_vehicle_dense_layout"
+      },
+      "expectedOutput": {
+        "electroGraph3D": {
+          "vehicleId": "test_vehicle_dense_layout",
+          "nodes": 15,
+          "routes": 14,
+          "circuits": 1
+        },
+        "performance": {
+          "nodeCount": 15,
+          "routeCount": 14,
+          "circuitCount": 1,
+          "optimizationApplied": true
+        }
+      }
+    }
+  ],
+  "acceptanceCriteria": [
+    "All nodes receive valid 3D positions within zone boundaries",
+    "Wire routes avoid collisions and follow realistic paths",
+    "ElectroGraph3D schema validation passes",
+    "Zone constraints respected for all component types",
+    "Circuit grouping maintained in 3D representation",
+    "Performance suitable for real-time visualization",
+    "Mesh properties assigned based on component types",
+    "Bounding box calculated correctly for vehicle scale"
+  ]
+}

@@ -1,0 +1,351 @@
+{
+  "name": "sub.spatializer",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "name": "When called",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Initialize spatialization process\n// Input: { electroGraph, nodeMetadata, vehicleSignature }\n\nconst input = items[0].json;\nconst { electroGraph, nodeMetadata, vehicleSignature } = input;\n\nif (!electroGraph?.nodes) {\n  throw new Error('ElectroGraph with nodes required');\n}\n\nif (!nodeMetadata || !Array.isArray(nodeMetadata)) {\n  throw new Error('NodeMetadata array required');\n}\n\n// Create metadata lookup for fast access\nconst metadataLookup = {};\nnodeMetadata.forEach(meta => {\n  metadataLookup[meta.nodeId] = meta;\n});\n\n// Vehicle type determines coordinate system and scale\nconst vehicleInfo = vehicleSignature.split('_');\nconst vehicleType = vehicleInfo[0]?.toLowerCase() || 'unknown';\n\n// Define vehicle coordinate system and zones\nconst coordinateSystem = {\n  scale: 1.0, // 1 unit = 1 meter\n  origin: [0, 0, 0], // Center of vehicle\n  boundingBox: {\n    min: [-2.5, -1.0, -0.5], // Front, left, bottom\n    max: [2.5, 1.0, 2.0]     // Rear, right, top\n  },\n  zones: {\n    engine: {\n      center: [1.8, 0, 0.3],\n      size: [0.8, 1.6, 0.6],\n      priority: 1\n    },\n    dash: {\n      center: [0.5, 0, 0.8],\n      size: [0.4, 1.2, 0.3],\n      priority: 2\n    },\n    interior: {\n      center: [-0.5, 0, 0.6],\n      size: [1.5, 1.4, 0.8],\n      priority: 3\n    },\n    trunk: {\n      center: [-2.0, 0, 0.4],\n      size: [0.8, 1.2, 0.6],\n      priority: 4\n    },\n    underhood: {\n      center: [2.0, 0, 0.1],\n      size: [0.6, 1.4, 0.2],\n      priority: 5\n    },\n    undercar: {\n      center: [0, 0, -0.3],\n      size: [4.0, 1.4, 0.2],\n      priority: 6\n    },\n    exterior: {\n      center: [0, 0, 1.2],\n      size: [4.0, 2.0, 0.4],\n      priority: 7\n    }\n  }\n};\n\n// Prepare nodes with zone assignments\nconst nodesWithZones = electroGraph.nodes.map(node => {\n  const metadata = metadataLookup[node.id];\n  const zone = metadata?.location?.zone || node.zone || 'interior';\n  \n  return {\n    ...node,\n    zone: zone,\n    metadata: metadata,\n    circuits: electroGraph.circuits?.filter(circuit => \n      circuit.nodes?.includes(node.id)\n    ).map(c => c.id) || []\n  };\n});\n\nconst spatializationContext = {\n  electroGraph,\n  nodesWithZones,\n  metadataLookup,\n  vehicleSignature,\n  coordinateSystem,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: spatializationContext }];"
+      },
+      "id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+      "name": "Initialize Spatialization",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.LAYOUT_URL }}/positions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "nodes",
+              "value": "={{ JSON.stringify($json.nodesWithZones) }}"
+            },
+            {
+              "name": "coordinateSystem",
+              "value": "={{ JSON.stringify($json.coordinateSystem) }}"
+            },
+            {
+              "name": "vehicleSignature", 
+              "value": "={{ $json.vehicleSignature }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+      "name": "Calculate Node Positions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process positioned nodes and prepare for routing\nconst spatialContext = items[0].json;\nconst positionResponse = spatialContext.positionedNodes || spatialContext.data;\n\nif (!positionResponse || !Array.isArray(positionResponse)) {\n  throw new Error('Invalid position response from layout service');\n}\n\n// Merge positions back with original nodes\nconst positionedNodes = positionResponse.map(positioned => {\n  const originalNode = spatialContext.nodesWithZones.find(n => n.id === positioned.id);\n  if (!originalNode) {\n    throw new Error(`Node ${positioned.id} not found in original graph`);\n  }\n  \n  return {\n    ...originalNode,\n    position: positioned.position,\n    rotation: positioned.rotation || [0, 0, 0],\n    scale: positioned.scale || [1, 1, 1],\n    mesh: {\n      geometry: getGeometryForType(originalNode.type),\n      material: getMaterialForType(originalNode.type),\n      color: getColorForType(originalNode.type),\n      userData: originalNode.metadata || {}\n    }\n  };\n});\n\n// Helper functions for mesh properties\nfunction getGeometryForType(type) {\n  const geometryMap = {\n    fuse: 'cylinder',\n    relay: 'box',\n    connector: 'box', \n    ecu: 'box',\n    sensor: 'sphere',\n    actuator: 'cylinder',\n    lamp: 'sphere',\n    motor: 'cylinder',\n    splice: 'sphere',\n    ground: 'sphere',\n    terminal: 'cylinder',\n    battery: 'box'\n  };\n  return geometryMap[type] || 'box';\n}\n\nfunction getMaterialForType(type) {\n  const materialMap = {\n    fuse: 'plastic',\n    relay: 'plastic',\n    connector: 'plastic',\n    ecu: 'metal',\n    sensor: 'metal',\n    actuator: 'metal',\n    lamp: 'glass',\n    motor: 'metal',\n    splice: 'plastic',\n    ground: 'metal',\n    terminal: 'metal',\n    battery: 'plastic'\n  };\n  return materialMap[type] || 'plastic';\n}\n\nfunction getColorForType(type) {\n  const colorMap = {\n    fuse: '#FF6B6B',      // Red\n    relay: '#4ECDC4',     // Teal\n    connector: '#45B7D1', // Blue\n    ecu: '#96CEB4',       // Green\n    sensor: '#FFEAA7',    // Yellow\n    actuator: '#DDA0DD',  // Plum\n    lamp: '#F0E68C',      // Khaki\n    motor: '#20B2AA',     // Light Sea Green\n    splice: '#FFA07A',    // Light Salmon\n    ground: '#A0A0A0',    // Gray\n    terminal: '#C0C0C0',  // Silver\n    battery: '#FF4500'    // Orange Red\n  };\n  return colorMap[type] || '#808080';\n}\n\n// Prepare for wire routing\nconst routingContext = {\n  ...spatialContext,\n  positionedNodes,\n  edges: spatialContext.electroGraph.edges,\n  needsRouting: true\n};\n\nreturn [{ json: routingContext }];"
+      },
+      "id": "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+      "name": "Process Positioned Nodes",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.LAYOUT_URL }}/routes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "nodes",
+              "value": "={{ JSON.stringify($json.positionedNodes) }}"
+            },
+            {
+              "name": "edges",
+              "value": "={{ JSON.stringify($json.edges) }}"
+            },
+            {
+              "name": "coordinateSystem",
+              "value": "={{ JSON.stringify($json.coordinateSystem) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+      "name": "Calculate Wire Routes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1060, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate ElectroGraph3D from positioned nodes and routes\nconst routingContext = items[0].json;\nconst routeResponse = routingContext.routes || routingContext.data;\n\nif (!routeResponse || !Array.isArray(routeResponse)) {\n  throw new Error('Invalid route response from layout service');\n}\n\n// Build ElectroGraph3D structure\nconst vehicleInfo = routingContext.vehicleSignature.split('_');\nconst electroGraph3D = {\n  vehicleId: routingContext.vehicleSignature,\n  metadata: {\n    brand: vehicleInfo[0] || 'unknown',\n    model: vehicleInfo[1] || 'unknown',\n    year: parseInt(vehicleInfo[2]) || 2000,\n    boundingBox: routingContext.coordinateSystem.boundingBox,\n    scale: routingContext.coordinateSystem.scale,\n    generated: new Date().toISOString()\n  },\n  nodes: routingContext.positionedNodes.map(node => ({\n    id: node.id,\n    type: node.type,\n    label: node.label,\n    position: node.position,\n    rotation: node.rotation,\n    scale: node.scale,\n    zone: node.zone,\n    circuits: node.circuits,\n    mesh: node.mesh\n  })),\n  edges: routingContext.edges,\n  routes: routeResponse.map(route => ({\n    edgeId: route.edgeId,\n    path: route.path,\n    style: {\n      color: route.color || getWireColor(route.edgeId, routingContext),\n      radius: route.radius || getWireRadius(route.edgeId, routingContext),\n      segments: route.segments || 8,\n      material: route.material || 'copper'\n    }\n  })),\n  circuits: routingContext.electroGraph.circuits?.map(circuit => ({\n    id: circuit.id,\n    label: circuit.name || circuit.label || circuit.id,\n    nodes: circuit.nodes,\n    color: circuit.color || generateCircuitColor(circuit.id),\n    group: `Circuit:${circuit.id}`\n  })) || []\n};\n\n// Helper functions\nfunction getWireColor(edgeId, context) {\n  const edge = context.edges.find(e => e.id === edgeId);\n  if (edge?.properties?.wireColor) {\n    return convertWireColorToHex(edge.properties.wireColor);\n  }\n  return '#000000'; // Default black\n}\n\nfunction getWireRadius(edgeId, context) {\n  const edge = context.edges.find(e => e.id === edgeId);\n  if (edge?.properties?.wireGauge) {\n    return convertGaugeToRadius(edge.properties.wireGauge);\n  }\n  return 0.002; // Default 2mm radius\n}\n\nfunction convertWireColorToHex(colorName) {\n  const colorMap = {\n    red: '#FF0000',\n    black: '#000000',\n    blue: '#0000FF',\n    green: '#00FF00',\n    yellow: '#FFFF00',\n    white: '#FFFFFF',\n    brown: '#8B4513',\n    orange: '#FFA500',\n    purple: '#800080',\n    gray: '#808080',\n    grey: '#808080'\n  };\n  return colorMap[colorName?.toLowerCase()] || '#000000';\n}\n\nfunction convertGaugeToRadius(gauge) {\n  // Convert wire gauge to approximate radius in meters\n  const gaugeMap = {\n    '0.5mm²': 0.0005,\n    '1mm²': 0.0008,\n    '2.5mm²': 0.001,\n    '4mm²': 0.0015,\n    '6mm²': 0.002,\n    '10mm²': 0.0025,\n    '16mm²': 0.003\n  };\n  return gaugeMap[gauge] || 0.002;\n}\n\nfunction generateCircuitColor(circuitId) {\n  // Generate consistent color based on circuit ID\n  const colors = [\n    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',\n    '#FFEAA7', '#DDA0DD', '#F0E68C', '#20B2AA',\n    '#FFA07A', '#98FB98', '#F4A460', '#87CEEB'\n  ];\n  const hash = circuitId.split('').reduce((a, b) => {\n    a = ((a << 5) - a) + b.charCodeAt(0);\n    return a & a;\n  }, 0);\n  return colors[Math.abs(hash) % colors.length];\n}\n\nreturn [{ json: { electroGraph3D, spatializationComplete: true } }];"
+      },
+      "id": "f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+      "name": "Generate ElectroGraph3D",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1260, 300]
+    },
+    {
+      "parameters": {
+        "schemaName": "ElectroGraph3D",
+        "data": "={{ $json.electroGraph3D }}"
+      },
+      "id": "a7b8c9d0-1e2f-3a4b-5c6d-7e8f9a0b1c2d",
+      "name": "Validate ElectroGraph3D",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1460, 300],
+      "parameters": {
+        "workflowId": "sub.ajv-validate"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "b8c9d0e1-2f3a-4b5c-6d7e-8f9a0b1c2d3e",
+      "name": "Validation Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1660, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Handle validation failure\nconst validationResult = items[0].json;\nconst errorDetails = {\n  stage: 'spatialization',\n  step: 'validation',\n  error: 'ElectroGraph3D schema validation failed',\n  details: validationResult.errors || [],\n  timestamp: new Date().toISOString()\n};\n\nthrow new Error(`ElectroGraph3D validation failed: ${JSON.stringify(errorDetails)}`);"
+      },
+      "id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+      "name": "Handle Validation Failure",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1860, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.INGEST_URL }}/normalized/electrograph3d",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json.electroGraph3D) }}"
+            },
+            {
+              "name": "jobId",
+              "value": "={{ $json.jobId || $json.vehicleSignature + '_' + Date.now() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "d0e1f2a3-4b5c-6d7e-8f9a-0b1c2d3e4f5a",
+      "name": "Store ElectroGraph3D",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1860, 400]
+    },
+    {
+      "parameters": {
+        "eventType": "spatialized",
+        "stage": "spatialized",
+        "step": "complete",
+        "payload": "={{ { electroGraph3D: $json.electroGraph3D, metadata: { nodeCount: $json.electroGraph3D.nodes.length, routeCount: $json.electroGraph3D.routes.length, circuitCount: $json.electroGraph3D.circuits.length } } }}"
+      },
+      "id": "e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b",
+      "name": "Emit Lake Event",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2060, 400],
+      "parameters": {
+        "workflowId": "sub.emit-lake-event"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Prepare final spatialization result\nconst result = items[0].json;\nconst spatializationResult = {\n  success: true,\n  electroGraph3D: result.electroGraph3D,\n  metadata: {\n    vehicleSignature: result.electroGraph3D.vehicleId,\n    nodeCount: result.electroGraph3D.nodes.length,\n    routeCount: result.electroGraph3D.routes.length,\n    circuitCount: result.electroGraph3D.circuits.length,\n    boundingBox: result.electroGraph3D.metadata.boundingBox,\n    scale: result.electroGraph3D.metadata.scale,\n    generated: result.electroGraph3D.metadata.generated\n  },\n  performance: {\n    processingTime: Date.now() - new Date(result.electroGraph3D.metadata.generated).getTime(),\n    memoryUsage: process.memoryUsage ? process.memoryUsage().heapUsed : 0\n  },\n  quality: {\n    positionedNodes: result.electroGraph3D.nodes.length,\n    routedWires: result.electroGraph3D.routes.length,\n    groupedCircuits: result.electroGraph3D.circuits.length,\n    validationPassed: true\n  }\n};\n\nreturn [{ json: spatializationResult }];"
+      },
+      "id": "f2a3b4c5-6d7e-8f9a-0b1c-2d3e4f5a6b7c",
+      "name": "Prepare Final Result",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2260, 400]
+    }
+  ],
+  "connections": {
+    "When called": {
+      "main": [
+        [
+          {
+            "node": "Initialize Spatialization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Spatialization": {
+      "main": [
+        [
+          {
+            "node": "Calculate Node Positions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Node Positions": {
+      "main": [
+        [
+          {
+            "node": "Process Positioned Nodes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Positioned Nodes": {
+      "main": [
+        [
+          {
+            "node": "Calculate Wire Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Wire Routes": {
+      "main": [
+        [
+          {
+            "node": "Generate ElectroGraph3D",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate ElectroGraph3D": {
+      "main": [
+        [
+          {
+            "node": "Validate ElectroGraph3D",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate ElectroGraph3D": {
+      "main": [
+        [
+          {
+            "node": "Validation Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Passed?": {
+      "main": [
+        [
+          {
+            "node": "Handle Validation Failure",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Store ElectroGraph3D",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store ElectroGraph3D": {
+      "main": [
+        [
+          {
+            "node": "Emit Lake Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emit Lake Event": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "sub-spatializer",
+  "tags": []
+}
