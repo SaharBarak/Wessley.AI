@@ -1,0 +1,229 @@
+{
+  "testName": "LLM Metadata Enrichment Test Vectors",
+  "description": "Test data for PR6 LLM metadata enrichment workflow",
+  "version": "1.0.0",
+  "testCases": [
+    {
+      "id": "test_case_1",
+      "description": "High confidence metadata enrichment",
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {
+              "id": "fuse_main_60a",
+              "type": "fuse", 
+              "label": "Main 60A Fuse",
+              "zone": "engine",
+              "properties": {
+                "rating": "60A",
+                "location": "near_battery"
+              }
+            },
+            {
+              "id": "relay_starter",
+              "type": "relay",
+              "label": "Starter Relay",
+              "zone": "engine",
+              "properties": {
+                "type": "4_pin",
+                "location": "relay_box"
+              }
+            },
+            {
+              "id": "ground_g101",
+              "type": "ground",
+              "label": "G101 Ground Point",
+              "zone": "engine",
+              "properties": {
+                "location": "engine_block"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge_1",
+              "from": "fuse_main_60a",
+              "to": "relay_starter",
+              "properties": {
+                "wireGauge": "6mm²",
+                "wireColor": "red"
+              }
+            },
+            {
+              "id": "edge_2", 
+              "from": "relay_starter",
+              "to": "ground_g101",
+              "properties": {
+                "wireGauge": "4mm²",
+                "wireColor": "black"
+              }
+            }
+          ],
+          "circuits": [
+            {
+              "id": "circuit_starter",
+              "name": "Starter Circuit",
+              "function": "Engine starting system",
+              "nodes": ["fuse_main_60a", "relay_starter", "ground_g101"]
+            }
+          ]
+        },
+        "researchManifest": {
+          "brand": "Hyundai",
+          "model": "Galloper",
+          "year": 2000,
+          "sources": [
+            "Hyundai Galloper 2000 Service Manual",
+            "Electrical Wiring Diagram Manual"
+          ],
+          "confidence": 0.9,
+          "components": [
+            {
+              "type": "fuse",
+              "label": "Main Fuse",
+              "description": "60A main power distribution fuse, protects primary electrical circuits",
+              "notes": "Located in engine bay near battery positive terminal"
+            },
+            {
+              "type": "relay",
+              "label": "Starter Relay", 
+              "description": "4-pin relay controlling starter motor engagement",
+              "notes": "Standard Hyundai 4-pin relay, part number 39400-43000"
+            }
+          ],
+          "requiresManualReview": false
+        },
+        "vehicleSignature": "hyundai_galloper_2000_basic"
+      },
+      "expectedOutput": {
+        "processedMetadata": [
+          {
+            "nodeId": "fuse_main_60a",
+            "confidence": 0.9,
+            "function": "Main power distribution fuse",
+            "specifications": {
+              "current": "60A",
+              "voltage": "12V"
+            },
+            "location": {
+              "zone": "engine",
+              "access": "easy"
+            },
+            "serviceInfo": {
+              "testProcedure": "Visual inspection and continuity test"
+            }
+          }
+        ],
+        "reviewItems": [],
+        "totalProcessed": 3,
+        "totalReview": 0
+      }
+    },
+    {
+      "id": "test_case_2", 
+      "description": "Low confidence triggering manual review",
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {
+              "id": "unknown_component_x1",
+              "type": "sensor",
+              "label": "Unknown Sensor X1",
+              "zone": "dash",
+              "properties": {}
+            }
+          ],
+          "edges": [],
+          "circuits": []
+        },
+        "researchManifest": {
+          "brand": "Generic",
+          "model": "TestVehicle", 
+          "year": 1995,
+          "sources": ["Limited documentation found"],
+          "confidence": 0.3,
+          "components": [],
+          "requiresManualReview": true
+        },
+        "vehicleSignature": "generic_testvehicle_1995_unknown"
+      },
+      "expectedOutput": {
+        "processedMetadata": [],
+        "reviewItems": [
+          {
+            "nodeId": "unknown_component_x1",
+            "reason": "low_confidence",
+            "confidence": "< 0.75",
+            "needsReview": true
+          }
+        ],
+        "totalProcessed": 0,
+        "totalReview": 1
+      }
+    },
+    {
+      "id": "test_case_3",
+      "description": "JSON repair workflow test", 
+      "input": {
+        "electroGraph": {
+          "nodes": [
+            {
+              "id": "connector_c201",
+              "type": "connector",
+              "label": "C201 Engine Connector",
+              "zone": "engine",
+              "properties": {
+                "pinCount": 12,
+                "type": "weatherpack"
+              }
+            }
+          ],
+          "edges": [],
+          "circuits": []
+        },
+        "researchManifest": {
+          "brand": "Ford",
+          "model": "F150",
+          "year": 2005,
+          "sources": [
+            "Ford F150 2005 Electrical Manual",
+            "Connector Pin-out Reference"
+          ],
+          "confidence": 0.8,
+          "components": [
+            {
+              "type": "connector",
+              "label": "C201",
+              "description": "12-pin weatherpack connector for engine sensors",
+              "notes": "Standard Ford weatherpack connector"
+            }
+          ],
+          "requiresManualReview": false
+        },
+        "vehicleSignature": "ford_f150_2005_v8"
+      },
+      "simulateJsonError": true,
+      "expectedOutput": {
+        "processedMetadata": [
+          {
+            "nodeId": "connector_c201",
+            "confidence": ">= 0.75",
+            "repaired": true
+          }
+        ],
+        "reviewItems": [],
+        "totalProcessed": 1,
+        "totalReview": 0
+      }
+    }
+  ],
+  "acceptanceCriteria": [
+    "All metadata follows strict NodeMetadata@1 schema",
+    "Low confidence items (< 0.75) route to manual review", 
+    "Evidence-only rule prevents hallucinations",
+    "JSON repair handles malformed responses",
+    "Caching reduces redundant API calls",
+    "Batch processing handles multiple nodes efficiently",
+    "Manual review queue receives properly formatted items"
+  ]
+}

@@ -1,0 +1,528 @@
+{
+  "name": "sub.llm-metadata",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f4b8a3c1-9e2d-4f7a-8b1c-5d6e7f8a9b0c",
+      "name": "When called",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build node context for LLM metadata enrichment\n// Input: { electroGraph, researchManifest, vehicleSignature }\n\nconst input = items[0].json;\nconst { electroGraph, researchManifest, vehicleSignature } = input;\n\nif (!electroGraph?.nodes) {\n  throw new Error('ElectroGraph with nodes required');\n}\n\n// Build context for each node\nconst nodeContexts = [];\n\nfor (const node of electroGraph.nodes) {\n  // Build neighborhood context\n  const upstreamNodes = electroGraph.edges\n    .filter(edge => edge.to === node.id)\n    .map(edge => electroGraph.nodes.find(n => n.id === edge.from))\n    .filter(Boolean);\n  \n  const downstreamNodes = electroGraph.edges\n    .filter(edge => edge.from === node.id)\n    .map(edge => electroGraph.nodes.find(n => n.id === edge.to))\n    .filter(Boolean);\n  \n  // Extract relevant evidence from research\n  const evidence = [];\n  if (researchManifest?.components) {\n    for (const component of researchManifest.components) {\n      // Match by type or label similarity\n      if (component.type === node.type || \n          (component.label && node.label && \n           component.label.toLowerCase().includes(node.label.toLowerCase()))) {\n        evidence.push({\n          text: component.description || component.notes || `${component.type} component`,\n          source: `research_manifest`,\n          confidence: researchManifest.confidence || 0.5\n        });\n      }\n    }\n  }\n  \n  // Add circuit context\n  const circuits = electroGraph.circuits?.filter(circuit => \n    circuit.nodes?.includes(node.id)\n  ) || [];\n  \n  const nodeContext = {\n    node: {\n      id: node.id,\n      type: node.type,\n      label: node.label,\n      zone: node.zone,\n      circuits: circuits.map(c => ({ id: c.id, name: c.name, function: c.function })),\n      properties: node.properties || {}\n    },\n    neighborhood: {\n      upstream: upstreamNodes.map(n => ({ id: n.id, type: n.type, label: n.label })),\n      downstream: downstreamNodes.map(n => ({ id: n.id, type: n.type, label: n.label })),\n      grounds: upstreamNodes.filter(n => n.type === 'ground').map(n => n.id)\n    },\n    evidence: evidence.slice(0, 3), // Limit to 3 pieces of evidence\n    vehicle: vehicleSignature\n  };\n  \n  nodeContexts.push(nodeContext);\n}\n\n// Split into batches of 20 for efficient processing\nconst batchSize = 20;\nconst batches = [];\nfor (let i = 0; i < nodeContexts.length; i += batchSize) {\n  batches.push({\n    batchId: Math.floor(i / batchSize),\n    nodes: nodeContexts.slice(i, i + batchSize),\n    vehicleSignature,\n    totalBatches: Math.ceil(nodeContexts.length / batchSize)\n  });\n}\n\nreturn batches.map(batch => ({ json: batch }));"
+      },
+      "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "name": "Build Node Contexts",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Check cache for each node in batch\n// Input: batch with nodes array\n\nconst batch = items[0].json;\nconst cacheResults = [];\nconst nodesToProcess = [];\n\nfor (const nodeContext of batch.nodes) {\n  // Create evidence hash for cache key\n  const evidenceText = nodeContext.evidence.map(e => e.text).join('|');\n  const evidenceHash = require('crypto')\n    .createHash('sha256')\n    .update(evidenceText)\n    .digest('hex')\n    .substring(0, 16);\n  \n  const cacheKey = `metadata:${batch.vehicleSignature}:${nodeContext.node.id}:${evidenceHash}`;\n  \n  nodeContext.cacheKey = cacheKey;\n  nodeContext.evidenceHash = evidenceHash;\n  nodesToProcess.push(nodeContext);\n}\n\nreturn [{ json: { ...batch, nodes: nodesToProcess } }];"
+      },
+      "id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+      "name": "Prepare Cache Keys",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.INGEST_URL }}/cache/{{ $json.cacheKey }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+      "name": "Cache Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [860, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.statusCode }}",
+              "operation": "equal",
+              "value2": "200"
+            }
+          ]
+        }
+      },
+      "id": "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+      "name": "Cache Hit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1060, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Return cached metadata\nconst cached = items[0].json;\nreturn [{ json: { nodeMetadata: cached.data, fromCache: true } }];"
+      },
+      "id": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+      "name": "Use Cached",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1260, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build OpenAI request for LLM metadata enrichment\n// Input: batch with nodes to process\n\nconst batch = items[0].json;\nconst systemPrompt = `You are an automotive wiring documentation expert. Extract structured metadata for vehicle electrical nodes.\nUse ONLY the provided evidence. If a field is not supported by evidence, set it to null and add a gap note.\nPrefer OEM terminology. Return strict JSON that matches the provided JSON Schema, with no extra keys.\nFor confidence scoring: 0.9+ = strong evidence, 0.7-0.9 = moderate evidence, 0.5-0.7 = weak evidence, <0.5 = insufficient evidence.`;\n\n// Load NodeMetadata schema\nconst nodeMetadataSchema = {\n  \"type\": \"object\",\n  \"required\": [\"nodeId\", \"confidence\", \"evidence\"],\n  \"properties\": {\n    \"nodeId\": { \"type\": \"string\" },\n    \"confidence\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 1 },\n    \"evidence\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"text\", \"source\"],\n        \"properties\": {\n          \"text\": { \"type\": \"string\" },\n          \"source\": { \"type\": \"string\" },\n          \"confidence\": { \"type\": \"number\", \"minimum\": 0, \"maximum\": 1 }\n        }\n      }\n    },\n    \"function\": { \"type\": [\"string\", \"null\"] },\n    \"specifications\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"voltage\": { \"type\": [\"string\", \"null\"] },\n        \"current\": { \"type\": [\"string\", \"null\"] },\n        \"power\": { \"type\": [\"string\", \"null\"] },\n        \"resistance\": { \"type\": [\"string\", \"null\"] },\n        \"pinCount\": { \"type\": [\"integer\", \"null\"] }\n      }\n    },\n    \"location\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"zone\": { \"type\": [\"string\", \"null\"], \"enum\": [null, \"engine\", \"dash\", \"interior\", \"trunk\", \"exterior\", \"underhood\", \"undercar\"] },\n        \"mounting\": { \"type\": [\"string\", \"null\"] },\n        \"access\": { \"type\": [\"string\", \"null\"], \"enum\": [null, \"easy\", \"moderate\", \"difficult\", \"special_tools\"] }\n      }\n    },\n    \"connections\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"upstream\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"downstream\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"grounds\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n      }\n    },\n    \"serviceInfo\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"partNumber\": { \"type\": [\"string\", \"null\"] },\n        \"replaceInterval\": { \"type\": [\"string\", \"null\"] },\n        \"testProcedure\": { \"type\": [\"string\", \"null\"] },\n        \"commonFailures\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n      }\n    },\n    \"gaps\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"field\", \"reason\"],\n        \"properties\": {\n          \"field\": { \"type\": \"string\" },\n          \"reason\": { \"type\": \"string\" }\n        }\n      }\n    },\n    \"generated\": { \"type\": \"string\", \"format\": \"date-time\" }\n  }\n};\n\nconst openaiRequests = batch.nodes.map((nodeContext, index) => {\n  const userContent = JSON.stringify(nodeContext, null, 2);\n  \n  return {\n    nodeContext,\n    request: {\n      model: \"gpt-4o\",\n      temperature: 0.1,\n      top_p: 0.1,\n      response_format: {\n        type: \"json_schema\",\n        json_schema: {\n          name: \"node_metadata\",\n          schema: nodeMetadataSchema\n        }\n      },\n      messages: [\n        { role: \"system\", content: systemPrompt },\n        { role: \"user\", content: userContent }\n      ]\n    }\n  };\n});\n\nreturn openaiRequests.map(req => ({ json: req }));"
+      },
+      "id": "f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+      "name": "Build OpenAI Requests",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1260, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "messages": "={{ $json.request.messages }}",
+        "options": {
+          "temperature": "={{ $json.request.temperature }}",
+          "topP": "={{ $json.request.top_p }}",
+          "responseFormat": "={{ $json.request.response_format }}"
+        }
+      },
+      "id": "a7b8c9d0-1e2f-3a4b-5c6d-7e8f9a0b1c2d",
+      "name": "OpenAI API Call",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1460, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process OpenAI response and validate\nconst response = items[0].json;\nconst nodeContext = response.nodeContext;\n\ntry {\n  // Parse the OpenAI response\n  let metadata;\n  if (response.choices && response.choices[0]?.message?.content) {\n    metadata = JSON.parse(response.choices[0].message.content);\n  } else {\n    throw new Error('No valid response from OpenAI');\n  }\n  \n  // Add required fields if missing\n  metadata.nodeId = nodeContext.node.id;\n  metadata.generated = new Date().toISOString();\n  \n  // Validate evidence array exists and is populated\n  if (!metadata.evidence || !Array.isArray(metadata.evidence) || metadata.evidence.length === 0) {\n    metadata.evidence = nodeContext.evidence || [{\n      text: \"Generated from node context\",\n      source: \"node_analysis\",\n      confidence: 0.5\n    }];\n  }\n  \n  // Set confidence if not provided\n  if (typeof metadata.confidence !== 'number') {\n    metadata.confidence = 0.6; // Default moderate confidence\n  }\n  \n  // Initialize gaps array if not present\n  if (!metadata.gaps) {\n    metadata.gaps = [];\n  }\n  \n  return [{\n    json: {\n      nodeContext,\n      metadata,\n      valid: true,\n      needsRepair: false\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      nodeContext,\n      metadata: null,\n      valid: false,\n      needsRepair: true,\n      error: error.message\n    }\n  }];\n}"
+      },
+      "id": "b8c9d0e1-2f3a-4b5c-6d7e-8f9a0b1c2d3e",
+      "name": "Parse & Validate Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1660, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needsRepair }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+      "name": "Needs Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1860, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build repair request for invalid JSON\nconst item = items[0].json;\nconst repairPrompt = `The following JSON response is invalid and needs to be repaired to match the NodeMetadata schema.\n\nInvalid JSON: ${JSON.stringify(item.metadata)}\nError: ${item.error}\n\nPlease return a valid JSON object that matches the NodeMetadata schema. Ensure all required fields are present and properly formatted.`;\n\nconst repairRequest = {\n  model: \"gpt-4o\",\n  temperature: 0.1,\n  messages: [\n    { role: \"system\", content: \"You are a JSON repair expert. Fix the provided JSON to match the required schema exactly.\" },\n    { role: \"user\", content: repairPrompt }\n  ]\n};\n\nreturn [{ json: { ...item, repairRequest } }];"
+      },
+      "id": "d0e1f2a3-4b5c-6d7e-8f9a-0b1c2d3e4f5a",
+      "name": "Build Repair Request",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2060, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "messages": "={{ $json.repairRequest.messages }}",
+        "options": {
+          "temperature": "={{ $json.repairRequest.temperature }}"
+        }
+      },
+      "id": "e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b",
+      "name": "Repair API Call",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [2260, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process repaired response\nconst response = items[0].json;\nconst nodeContext = response.nodeContext;\n\ntry {\n  let metadata;\n  if (response.choices && response.choices[0]?.message?.content) {\n    const content = response.choices[0].message.content;\n    // Extract JSON from response if wrapped in markdown\n    const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n    metadata = JSON.parse(jsonMatch ? jsonMatch[0] : content);\n  } else {\n    throw new Error('No valid repair response from OpenAI');\n  }\n  \n  // Ensure required fields\n  metadata.nodeId = nodeContext.node.id;\n  metadata.generated = new Date().toISOString();\n  \n  return [{\n    json: {\n      nodeContext,\n      metadata,\n      valid: true,\n      repaired: true\n    }\n  }];\n  \n} catch (error) {\n  // Final fallback - create minimal valid metadata\n  const fallbackMetadata = {\n    nodeId: nodeContext.node.id,\n    confidence: 0.3,\n    evidence: [{\n      text: \"Fallback metadata due to repair failure\",\n      source: \"system_fallback\",\n      confidence: 0.3\n    }],\n    function: null,\n    gaps: [{\n      field: \"all_fields\",\n      reason: \"JSON repair failed, insufficient evidence\"\n    }],\n    generated: new Date().toISOString()\n  };\n  \n  return [{\n    json: {\n      nodeContext,\n      metadata: fallbackMetadata,\n      valid: true,\n      fallback: true\n    }\n  }];\n}"
+      },
+      "id": "f2a3b4c5-6d7e-8f9a-0b1c-2d3e4f5a6b7c",
+      "name": "Process Repair",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2460, 300]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input2"
+      },
+      "id": "a3b4c5d6-7e8f-9a0b-1c2d-3e4f5a6b7c8d",
+      "name": "Merge Repair",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [2660, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.metadata.confidence }}",
+              "operation": "smaller",
+              "value2": 0.75
+            }
+          ]
+        }
+      },
+      "id": "b4c5d6e7-8f9a-0b1c-2d3e-4f5a6b7c8d9e",
+      "name": "Low Confidence?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2860, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Route to manual review for low confidence items\nconst item = items[0].json;\nconst reviewItem = {\n  nodeId: item.metadata.nodeId,\n  vehicleSignature: item.nodeContext.vehicle,\n  confidence: item.metadata.confidence,\n  gaps: item.metadata.gaps || [],\n  evidence: item.metadata.evidence,\n  needsReview: true,\n  reason: 'low_confidence',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: reviewItem }];"
+      },
+      "id": "c5d6e7f8-9a0b-1c2d-3e4f-5a6b7c8d9e0f",
+      "name": "Queue Manual Review",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [3060, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.INGEST_URL }}/manual-review",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "item",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        }
+      },
+      "id": "d6e7f8a9-0b1c-2d3e-4f5a-6b7c8d9e0f1a",
+      "name": "Send to Manual Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [3260, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.INGEST_URL }}/cache/{{ $json.nodeContext.cacheKey }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json.metadata) }}"
+            },
+            {
+              "name": "ttl",
+              "value": "86400"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "e7f8a9b0-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+      "name": "Cache Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [3060, 500]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "f8a9b0c1-2d3e-4f5a-6b7c-8d9e0f1a2b3c",
+      "name": "Merge Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [3460, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Collect all processed metadata\nconst allItems = items;\nconst processedMetadata = [];\nconst reviewItems = [];\n\nfor (const item of allItems) {\n  if (item.json.needsReview) {\n    reviewItems.push(item.json);\n  } else if (item.json.metadata) {\n    processedMetadata.push(item.json.metadata);\n  }\n}\n\nconst result = {\n  processedMetadata,\n  reviewItems,\n  totalProcessed: processedMetadata.length,\n  totalReview: reviewItems.length,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: result }];"
+      },
+      "id": "a9b0c1d2-3e4f-5a6b-7c8d-9e0f1a2b3c4d",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [3660, 400]
+    }
+  ],
+  "connections": {
+    "When called": {
+      "main": [
+        [
+          {
+            "node": "Build Node Contexts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Node Contexts": {
+      "main": [
+        [
+          {
+            "node": "Prepare Cache Keys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Cache Keys": {
+      "main": [
+        [
+          {
+            "node": "Cache Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Lookup": {
+      "main": [
+        [
+          {
+            "node": "Cache Hit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Hit?": {
+      "main": [
+        [
+          {
+            "node": "Use Cached",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build OpenAI Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Cached": {
+      "main": [
+        [
+          {
+            "node": "Merge Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build OpenAI Requests": {
+      "main": [
+        [
+          {
+            "node": "OpenAI API Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI API Call": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Response": {
+      "main": [
+        [
+          {
+            "node": "Needs Repair?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Repair?": {
+      "main": [
+        [
+          {
+            "node": "Build Repair Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Repair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Repair Request": {
+      "main": [
+        [
+          {
+            "node": "Repair API Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair API Call": {
+      "main": [
+        [
+          {
+            "node": "Process Repair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Repair": {
+      "main": [
+        [
+          {
+            "node": "Merge Repair",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Repair": {
+      "main": [
+        [
+          {
+            "node": "Low Confidence?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Confidence?": {
+      "main": [
+        [
+          {
+            "node": "Queue Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cache Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Send to Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Merge Final",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cache Metadata": {
+      "main": [
+        [
+          {
+            "node": "Merge Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final": {
+      "main": [
+        [
+          {
+            "node": "Collect Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "sub-llm-metadata",
+  "tags": []
+}
