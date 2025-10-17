@@ -1,0 +1,61 @@
+{
+  "frame": {
+    "x": "forward",
+    "y": "left",
+    "z": "up"
+  },
+  "materials": {
+    "wire": {
+      "thickness": 0.006
+    },
+    "harness": {
+      "thickness": 0.015
+    },
+    "ground": {
+      "thickness": 0.008
+    }
+  },
+  "groups": [
+    {
+      "id": "EngineBay",
+      "filter": {
+        "anchor_zone": "Engine Compartment"
+      }
+    },
+    {
+      "id": "Dash",
+      "filter": {
+        "anchor_zone": "Dash Panel"
+      }
+    },
+    {
+      "id": "Floor",
+      "filter": {
+        "anchor_zone": "Floor & Roof"
+      }
+    },
+    {
+      "id": "Rear",
+      "filter": {
+        "anchor_zone": "Rear Cargo/Tailgate"
+      }
+    }
+  ],
+  "instances": {
+    "components": [
+      "component",
+      "fuse",
+      "relay",
+      "bus",
+      "ground_point",
+      "connector"
+    ],
+    "wires": [
+      "wire"
+    ],
+    "harnesses": [
+      "harness",
+      "harness_segment"
+    ]
+  }
+}

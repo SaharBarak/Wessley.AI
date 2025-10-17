@@ -1,0 +1,1944 @@
+<!-- 
+GraphML model of the Pajero Pinin (2000–2003, V60, LHD, 4G93 engine). 
+Data derived from the official wiring diagrams:contentReference[oaicite:2]{index=2} and fuse/relay layouts:contentReference[oaicite:3]{index=3}:contentReference[oaicite:4]{index=4}. 
+Wire color codes use standard abbreviations (e.g. R-G = Red with Green stripe, Y-B = Yellow with Black stripe):contentReference[oaicite:5]{index=5}.
+-->
+
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <!-- Node attribute keys -->
+  <key id="node_type" for="node" attr.name="node_type" attr.type="string"/>
+  <key id="canonical_id" for="node" attr.name="canonical_id" attr.type="string"/>
+  <key id="code_id" for="node" attr.name="code_id" attr.type="string"/>
+  <key id="anchor_zone" for="node" attr.name="anchor_zone" attr.type="string"/>
+  <key id="anchor_xyz" for="node" attr.name="anchor_xyz" attr.type="string"/>
+  <key id="rail" for="node" attr.name="rail" attr.type="string"/>
+  <key id="path_xyz" for="node" attr.name="path_xyz" attr.type="string"/>
+  <key id="color" for="node" attr.name="color" attr.type="string"/>
+  <key id="gauge" for="node" attr.name="gauge" attr.type="string"/>
+  <key id="signal" for="node" attr.name="signal" attr.type="string"/>
+  <key id="voltage" for="node" attr.name="voltage" attr.type="string"/>
+  
+  <!-- Edge attribute keys -->
+  <key id="relationship" for="edge" attr.name="relationship" attr.type="string"/>
+  
+  <graph id="PajeroPininV60_Electrical" edgedefault="directed">
+    <!-- Ground Plane -->
+    <node id="ground_plane">
+      <data key="node_type">ground_plane</data>
+      <data key="canonical_id">Chassis Ground Plane</data>
+      <data key="code_id">GND-Plane</data>
+      <data key="anchor_zone">Chassis</data>
+    </node>
+    
+    <!-- Location Nodes -->
+    <node id="loc_engine_bay">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Engine Compartment (LHD)</data>
+      <data key="code_id">LOC-ENG</data>
+    </node>
+    <node id="loc_dash_panel">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Dash Panel (Cabin)</data>
+      <data key="code_id">LOC-DASH</data>
+    </node>
+    <node id="loc_floor_roof">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Floor &amp; Roof</data>
+      <data key="code_id">LOC-FLOOR</data>
+    </node>
+    <node id="loc_left_door">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Left Front Door</data>
+      <data key="code_id">LOC-LFD</data>
+    </node>
+    <node id="loc_right_door">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Right Front Door</data>
+      <data key="code_id">LOC-RFD</data>
+    </node>
+    <node id="loc_tailgate">
+      <data key="node_type">location</data>
+      <data key="canonical_id">Rear Cargo/Tailgate</data>
+      <data key="code_id">LOC-REAR</data>
+    </node>
+    
+    <!-- Wiring Harness Nodes -->
+    <node id="harness_engine">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Engine Compartment Harness</data>
+      <data key="code_id">H-ENG</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="harness_dash">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Instrument Panel Harness</data>
+      <data key="code_id">H-DASH</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="harness_floor">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Floor/Roof Harness</data>
+      <data key="code_id">H-FLOOR</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    <node id="harness_Ldoor">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Left Door Harness</data>
+      <data key="code_id">H-LFD</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="harness_Rdoor">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Right Door Harness</data>
+      <data key="code_id">H-RFD</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <node id="harness_tailgate">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Tailgate Harness</data>
+      <data key="code_id">H-REAR</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="harness_trans">
+      <data key="node_type">harness</data>
+      <data key="canonical_id">Transmission Harness (A/T)</data>
+      <data key="code_id">H-TRANS</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    
+    <!-- Ground Points and Earth Cable -->
+    <node id="ground_point_engine">
+      <data key="node_type">ground_point</data>
+      <data key="canonical_id">Ground Point (Engine Bay)</data>
+      <data key="code_id">G1</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="ground_point_dash">
+      <data key="node_type">ground_point</data>
+      <data key="canonical_id">Ground Point (Dash Panel)</data>
+      <data key="code_id">G2</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="ground_point_rear">
+      <data key="node_type">ground_point</data>
+      <data key="canonical_id">Ground Point (Rear Body)</data>
+      <data key="code_id">G3</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    
+    <!-- Bus Nodes (Power Distribution Buses) -->
+    <node id="bus_battery_plus">
+      <data key="node_type">bus</data>
+      <data key="canonical_id">Battery +12V Bus</data>
+      <data key="code_id">BATT+</data>
+      <data key="anchor_zone">Engine Compartment</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="bus_ignition">
+      <data key="node_type">bus</data>
+      <data key="canonical_id">Ignition Feed Bus (IG)</data>
+      <data key="code_id">BUS-IG</data>
+      <data key="voltage">12V (switched)</data>
+    </node>
+    <node id="bus_accessory">
+      <data key="node_type">bus</data>
+      <data key="canonical_id">Accessory Feed Bus (ACC)</data>
+      <data key="code_id">BUS-ACC</data>
+      <data key="voltage">12V (switched)</data>
+    </node>
+    
+    <!-- Component Nodes (ECUs, Modules, Actuators, Sensors, Loads) -->
+    <!-- Engine & Powertrain Components -->
+    <node id="comp_battery">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Battery</data>
+      <data key="code_id">Battery</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_alternator">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Alternator</data>
+      <data key="code_id">Alternator</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_starter">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Starter Motor</data>
+      <data key="code_id">Starter</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_engine_ecu">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Engine Control Unit (ECU)</data>
+      <data key="code_id">Engine-ECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_trans_ecu">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Automatic Transmission Control Unit</data>
+      <data key="code_id">A/T-ECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_ignition_coil">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Ignition Coil Pack</data>
+      <data key="code_id">IgnitionCoil</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_injector_1">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Fuel Injector #1</data>
+      <data key="code_id">Injector1</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_injector_2">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Fuel Injector #2</data>
+      <data key="code_id">Injector2</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_injector_3">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Fuel Injector #3</data>
+      <data key="code_id">Injector3</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_injector_4">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Fuel Injector #4</data>
+      <data key="code_id">Injector4</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_fuel_pump">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Fuel Pump (in Tank)</data>
+      <data key="code_id">FuelPump</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_throttle_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Throttle Position Sensor</data>
+      <data key="code_id">TPS</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_crank_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Crankshaft Position Sensor</data>
+      <data key="code_id">CKP</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_cam_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Camshaft Position Sensor</data>
+      <data key="code_id">CMP</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_maf_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Mass Airflow Sensor (MAF)</data>
+      <data key="code_id">MAF</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_o2_sensor1">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Oxygen Sensor (Front)</data>
+      <data key="code_id">O2-Front</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_o2_sensor2">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Oxygen Sensor (Rear)</data>
+      <data key="code_id">O2-Rear</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_coolant_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Engine Coolant Temp Sensor</data>
+      <data key="code_id">ECT</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_knock_sensor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Knock Sensor</data>
+      <data key="code_id">KNK</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_idle_valve">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Idle Air Control Valve</data>
+      <data key="code_id">IACV</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_purge_solenoid">
+      <data key="node_type">component</data>
+      <data key="canonical_id">EVAP Purge Solenoid</data>
+      <data key="code_id">PurgeSol</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_egr_solenoid">
+      <data key="node_type">component</data>
+      <data key="canonical_id">EGR Solenoid Valve</data>
+      <data key="code_id">EGR-Sol</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_ac_compressor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">A/C Compressor Clutch</data>
+      <data key="code_id">CompClutch</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_ac_pressure_sw">
+      <data key="node_type">component</data>
+      <data key="canonical_id">A/C Pressure Switch</data>
+      <data key="code_id">AC-Press</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_radiator_fan">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Radiator Fan Motor</data>
+      <data key="code_id">RadFan</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_condenser_fan">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Condenser Fan Motor</data>
+      <data key="code_id">CondFan</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_trans_range_sw">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Transmission Range Switch (Inhibitor)</data>
+      <data key="code_id">RangeSW</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_reverse_sw">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Reverse Light Switch</data>
+      <data key="code_id">RevSW</data>
+      <data key="anchor_zone">Transmission</data>
+    </node>
+    
+    <!-- Body & Chassis Electrical Components -->
+    <node id="comp_abs_module">
+      <data key="node_type">component</data>
+      <data key="canonical_id">ABS Control Module</data>
+      <data key="code_id">ABS-ECU</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_abs_sensor_fl">
+      <data key="node_type">component</data>
+      <data key="canonical_id">ABS Wheel Sensor FL</data>
+      <data key="code_id">ABS-FL</data>
+      <data key="anchor_zone">Chassis/Front Left</data>
+    </node>
+    <node id="comp_abs_sensor_fr">
+      <data key="node_type">component</data>
+      <data key="canonical_id">ABS Wheel Sensor FR</data>
+      <data key="code_id">ABS-FR</data>
+      <data key="anchor_zone">Chassis/Front Right</data>
+    </node>
+    <node id="comp_abs_sensor_rl">
+      <data key="node_type">component</data>
+      <data key="canonical_id">ABS Wheel Sensor RL</data>
+      <data key="code_id">ABS-RL</data>
+      <data key="anchor_zone">Chassis/Rear Left</data>
+    </node>
+    <node id="comp_abs_sensor_rr">
+      <data key="node_type">component</data>
+      <data key="canonical_id">ABS Wheel Sensor RR</data>
+      <data key="code_id">ABS-RR</data>
+      <data key="anchor_zone">Chassis/Rear Right</data>
+    </node>
+    <node id="comp_srs_ecu">
+      <data key="node_type">component</data>
+      <data key="canonical_id">SRS Airbag Control Module</data>
+      <data key="code_id">SRS-ECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_airbag_dr">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Driver Airbag</data>
+      <data key="code_id">Airbag-DR</data>
+      <data key="anchor_zone">Steering Wheel</data>
+    </node>
+    <node id="comp_airbag_ps">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Passenger Airbag</data>
+      <data key="code_id">Airbag-PASS</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_belt_pret_FL">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Seatbelt Pretensioner (Driver)</data>
+      <data key="code_id">Pret-DR</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    <node id="comp_belt_pret_FR">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Seatbelt Pretensioner (Passenger)</data>
+      <data key="code_id">Pret-PASS</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    <node id="comp_junction_block">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Centralized Junction (Fuse/Relay Box – Interior)</data>
+      <data key="code_id">J/B</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_engine_fuse_box">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Engine Compartment Fuse/Relay Box</data>
+      <data key="code_id">E/R FuseBox</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_combo_meter">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Combination Meter (Instrument Cluster)</data>
+      <data key="code_id">Cluster</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_lamp_head_left">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Left Headlamp Assembly</data>
+      <data key="code_id">Headlamp-L</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_lamp_head_right">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Right Headlamp Assembly</data>
+      <data key="code_id">Headlamp-R</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_lamp_fog_left">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Left Front Fog Lamp</data>
+      <data key="code_id">FogLamp-L</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_lamp_fog_right">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Right Front Fog Lamp</data>
+      <data key="code_id">FogLamp-R</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_lamp_tail_left">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Left Rear Combination Lamp</data>
+      <data key="code_id">TailLamp-L</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_lamp_tail_right">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Right Rear Combination Lamp</data>
+      <data key="code_id">TailLamp-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_lamp_plate_left">
+      <data key="node_type">component</data>
+      <data key="canonical_id">License Plate Lamp (Left)</data>
+      <data key="code_id">PlateLamp-L</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_lamp_plate_right">
+      <data key="node_type">component</data>
+      <data key="canonical_id">License Plate Lamp (Right)</data>
+      <data key="code_id">PlateLamp-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_lamp_high_stop">
+      <data key="node_type">component</data>
+      <data key="canonical_id">High Mount Stop Lamp</data>
+      <data key="code_id">StopLamp-H</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_horn">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Horn</data>
+      <data key="code_id">Horn</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_wiper_front">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Front Wiper Motor</data>
+      <data key="code_id">Wiper-F</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="comp_wiper_rear">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Rear Wiper Motor</data>
+      <data key="code_id">Wiper-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_defogger_grid">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Rear Window Defogger (Grid)</data>
+      <data key="code_id">Defogger</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_door_lock_module">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Lock Control Module</data>
+      <data key="code_id">DoorLock ECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_actuator_lock_LF">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Lock Actuator (Left Front)</data>
+      <data key="code_id">LockAct-LF</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="comp_actuator_lock_RF">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Lock Actuator (Right Front)</data>
+      <data key="code_id">LockAct-RF</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <node id="comp_actuator_lock_LR">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Lock Actuator (Left Rear)</data>
+      <data key="code_id">LockAct-LR</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    <node id="comp_actuator_lock_RR">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Lock Actuator (Right Rear)</data>
+      <data key="code_id">LockAct-RR</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    <node id="comp_actuator_lock_tail">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Tailgate Lock Actuator</data>
+      <data key="code_id">LockAct-TG</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_window_motor_LF">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Window Motor (Left Front)</data>
+      <data key="code_id">Window-LF</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="comp_window_motor_RF">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Window Motor (Right Front)</data>
+      <data key="code_id">Window-RF</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <node id="comp_window_motor_LR">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Window Motor (Left Rear)</data>
+      <data key="code_id">Window-LR</data>
+      <data key="anchor_zone">Rear Door/Left</data>
+    </node>
+    <node id="comp_window_motor_RR">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Window Motor (Right Rear)</data>
+      <data key="code_id">Window-RR</data>
+      <data key="anchor_zone">Rear Door/Right</data>
+    </node>
+    <node id="comp_switch_pw_main">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Window Main Switch (Driver)</data>
+      <data key="code_id">PW-SW-Main</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="comp_heated_seat_L">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Seat Heater (Driver)</data>
+      <data key="code_id">SeatHeat-L</data>
+      <data key="anchor_zone">Seat/Left</data>
+    </node>
+    <node id="comp_heated_seat_R">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Seat Heater (Passenger)</data>
+      <data key="code_id">SeatHeat-R</data>
+      <data key="anchor_zone">Seat/Right</data>
+    </node>
+    <node id="comp_mirror_L">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Mirror (Left, Motor &amp; Heater)</data>
+      <data key="code_id">Mirror-L</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="comp_mirror_R">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Mirror (Right, Motor &amp; Heater)</data>
+      <data key="code_id">Mirror-R</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <node id="comp_mirror_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Power Mirror Adjustment Switch</data>
+      <data key="code_id">Mirror-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_cigar_socket">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Cigarette Lighter Socket</data>
+      <data key="code_id">CigarSocket</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_room_lamp">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Interior Room Lamp</data>
+      <data key="code_id">RoomLamp</data>
+      <data key="anchor_zone">Roof (Interior)</data>
+    </node>
+    <node id="comp_cargo_lamp">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Luggage Compartment Lamp</data>
+      <data key="code_id">CargoLamp</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="comp_door_courtesy_L">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Courtesy Lamp (Left Front)</data>
+      <data key="code_id">DoorLamp-LF</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="comp_door_courtesy_R">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Door Courtesy Lamp (Right Front)</data>
+      <data key="code_id">DoorLamp-RF</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <node id="comp_glove_box_lamp">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Glove Box Lamp</data>
+      <data key="code_id">GloveLamp</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_heater_control">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Heater/AC Control Panel</data>
+      <data key="code_id">HVAC-Control</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_blower_motor">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Blower Motor (HVAC)</data>
+      <data key="code_id">Blower</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_ignition_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Ignition Switch</data>
+      <data key="code_id">IgnitionSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_light_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Lighting Switch (Head/Turn Stalk)</data>
+      <data key="code_id">LightSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_wiper_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Wiper/Washer Switch (Stalk)</data>
+      <data key="code_id">WiperSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_hazard_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Hazard Warning Switch</data>
+      <data key="code_id">HazardSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_rear_fog_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Rear Fog Lamp Switch</data>
+      <data key="code_id">RearFogSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_defogger_switch">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Rear Defogger Switch</data>
+      <data key="code_id">DefoggerSW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_keyless_receiver">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Keyless Entry Receiver</data>
+      <data key="code_id">KeylessECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_multidisplay">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Central Multi-Function Display</data>
+      <data key="code_id">CMFD</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="comp_radio">
+      <data key="node_type">component</data>
+      <data key="canonical_id">Radio/Tape Head Unit</data>
+      <data key="code_id">Radio</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    
+    <!-- Fuse Nodes (Interior and Engine Compartment Fuses) -->
+    <!-- Interior Fuse Box Fuses (Junction Block) [1-19] -->
+    <node id="fuse1_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 1 – Seat Heaters (20A)</data>
+      <data key="code_id">F1 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse2_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 2 – Door Mirror Heaters (10A)</data>
+      <data key="code_id">F2 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse3_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 3 – Sunroof (15A)</data>
+      <data key="code_id">F3 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse4_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 4 – Spare (10A)</data>
+      <data key="code_id">F4 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse5_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 5 – Engine ECU (15A)</data>
+      <data key="code_id">F5 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse6_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 6 – Fuel Pump / MFI (20A)</data>
+      <data key="code_id">F6 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse7_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 7 – Rear Fog Light (10A)</data>
+      <data key="code_id">F7 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse8_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 8 – Door Lock Control (20A)</data>
+      <data key="code_id">F8 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse9_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 9 – Heater Blower (30A)</data>
+      <data key="code_id">F9 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse10_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 10 – Rear Wiper (15A)</data>
+      <data key="code_id">F10 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse11_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 11 – (Not used)</data>
+      <data key="code_id">F11 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse12_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 12 – (Not used)</data>
+      <data key="code_id">F12 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse13_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 13 – Cigarette Lighter (15A)</data>
+      <data key="code_id">F13 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse14_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 14 – (Relay coil feed) (10A)</data>
+      <data key="code_id">F14 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse15_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 15 – Instrument Panel (10A)</data>
+      <data key="code_id">F15 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse16_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 16 – (Not used)</data>
+      <data key="code_id">F16 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse17_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 17 – Backup Lamps (10A)</data>
+      <data key="code_id">F17 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse18_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 18 – Rear Defogger (30A)</data>
+      <data key="code_id">F18 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="fuse19_int">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 19 – (Spare) (30A)</data>
+      <data key="code_id">F19 (Int)</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    
+    <!-- Engine Compartment Fusible Links / Fuses [1-24] -->
+    <node id="fuse1_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fusible Link 1 – ABS Power (60A)</data>
+      <data key="code_id">FL1 (ABS)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse2_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fusible Link 2 – Main +V (60A)</data>
+      <data key="code_id">FL2 (+V)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse3_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fusible Link 3 – Alternator Output (100A)</data>
+      <data key="code_id">FL3 (ALT)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse4_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 4 – Radiator Fan (40A)</data>
+      <data key="code_id">F4 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse5_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 5 – Power Windows (30A)</data>
+      <data key="code_id">F5 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse6_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 6 – Ignition Switch Feed (30A)</data>
+      <data key="code_id">F6 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse7_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 7 – Engine Management (20A)</data>
+      <data key="code_id">F7 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse8_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 8 – A/C Condenser Fan (25A)</data>
+      <data key="code_id">F8 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse9_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 9 – Accessory Power Socket (10A)</data>
+      <data key="code_id">F9 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse10_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 10 – Sunroof (20A)</data>
+      <data key="code_id">F10 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse11_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 11 – Brake Lamps (15A)</data>
+      <data key="code_id">F11 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse12_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 12 – Anti-theft Alarm (10A)</data>
+      <data key="code_id">F12 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse13_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 13 – Radio (10A)</data>
+      <data key="code_id">F13 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse14_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 14 – Interior Lamps (10A)</data>
+      <data key="code_id">F14 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse15_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 15 – Air Conditioner (10A)</data>
+      <data key="code_id">F15 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse16_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 16 – Front Fog Lights (15A)</data>
+      <data key="code_id">F16 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse17_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 17 – Horn (15A)</data>
+      <data key="code_id">F17 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse18_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 18 – Windshield Wiper (20A)</data>
+      <data key="code_id">F18 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse19_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 19 – Tail Lamp (Left) (10A)</data>
+      <data key="code_id">F19 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse20_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 20 – Tail Lamp (Right) (10A)</data>
+      <data key="code_id">F20 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse21_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 21 – Low Beam (Left) (10A)</data>
+      <data key="code_id">F21 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse22_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 22 – Low Beam (Right) (10A)</data>
+      <data key="code_id">F22 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse23_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 23 – High Beam (Left) (10A)</data>
+      <data key="code_id">F23 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="fuse24_eng">
+      <data key="node_type">fuse</data>
+      <data key="canonical_id">Fuse 24 – High Beam (Right) (10A)</data>
+      <data key="code_id">F24 (ENG)</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    
+    <!-- Relay Nodes -->
+    <node id="relay_horn">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Horn Relay</data>
+      <data key="code_id">R-HORN</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_fog">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Front Fog Lamp Relay</data>
+      <data key="code_id">R-FOG</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_lowbeam">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Headlamp Low Beam Relay</data>
+      <data key="code_id">R-LOW</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_highbeam">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Headlamp High Beam Relay</data>
+      <data key="code_id">R-HIGH</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_starter">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Starter Relay</data>
+      <data key="code_id">R-START</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_ignition">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Ignition (MFI) Relay</data>
+      <data key="code_id">R-IG</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_fuel_pump">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Fuel Pump Relay</data>
+      <data key="code_id">R-FP</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_defogger">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Rear Defogger Relay</data>
+      <data key="code_id">R-DEFOG</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_blower">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Blower Motor Relay (Heater)</data>
+      <data key="code_id">R-BLOW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_pw_main">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Power Window Safety Relay</data>
+      <data key="code_id">R-PW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_ac">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">A/C Compressor Relay</data>
+      <data key="code_id">R-AC</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_rad_fan_hi">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Radiator Fan High Relay</data>
+      <data key="code_id">R-RadFanHi</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_rad_fan_lo">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Radiator Fan Low Relay</data>
+      <data key="code_id">R-RadFanLo</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_cond_fan">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Condenser Fan Relay</data>
+      <data key="code_id">R-CondFan</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="relay_int_lamps">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Interior Lamp Control Relay</data>
+      <data key="code_id">R-INTLAMP</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="relay_turn_hazard">
+      <data key="node_type">relay</data>
+      <data key="canonical_id">Turn Signal/Hazard Flasher Relay</data>
+      <data key="code_id">R-FLASH</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    
+    <!-- Splice/Joint Nodes -->
+    <node id="splice_ground_dash">
+      <data key="node_type">splice</data>
+      <data key="canonical_id">Ground Splice (Dash Harness)</data>
+      <data key="code_id">S-GND-D</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="splice_ground_rear">
+      <data key="node_type">splice</data>
+      <data key="canonical_id">Ground Splice (Rear Harness)</data>
+      <data key="code_id">S-GND-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="splice_door_lock_pwr">
+      <data key="node_type">splice</data>
+      <data key="canonical_id">Door Lock Power Splice</data>
+      <data key="code_id">S-DL</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="splice_reverse_lamp">
+      <data key="node_type">splice</data>
+      <data key="canonical_id">Reverse Lamp Splice</data>
+      <data key="code_id">S-REV</data>
+      <data key="anchor_zone">Floor &amp; Roof</data>
+    </node>
+    
+    <!-- Connector Nodes (joining harnesses and components) -->
+    <!-- Battery terminals -->
+    <node id="conn_batt_positive">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Battery Positive Post</data>
+      <data key="code_id">C-BATT+</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_batt_negative">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Battery Negative Post</data>
+      <data key="code_id">C-BATT-</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <!-- Engine harness to Junction Block connectors -->
+    <node id="conn_JB_engine">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Junction Block Connector – Engine Harness</data>
+      <data key="code_id">C-01</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_JB_floor">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Junction Block Connector – Floor Harness</data>
+      <data key="code_id">C-02</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_JB_dash">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Junction Block Connector – Dash Harness</data>
+      <data key="code_id">C-03</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <!-- Door harness connectors at A-pillars -->
+    <node id="conn_door_L_Apillar">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Front Door Harness Connector (Left A-Pillar)</data>
+      <data key="code_id">C-10L</data>
+      <data key="anchor_zone">Left Front Door</data>
+    </node>
+    <node id="conn_door_R_Apillar">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Front Door Harness Connector (Right A-Pillar)</data>
+      <data key="code_id">C-10R</data>
+      <data key="anchor_zone">Right Front Door</data>
+    </node>
+    <!-- Tailgate harness connector -->
+    <node id="conn_tailgate_hinge">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Tailgate Harness Connector (Hinge)</data>
+      <data key="code_id">C-20</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <!-- Engine harness to transmission harness connector -->
+    <node id="conn_trans_engine">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Engine/Trans Harness Connector</data>
+      <data key="code_id">C-TRANS</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <!-- Alternator connector (regulator plug) and output stud -->
+    <node id="conn_alt_plug">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Alternator Field/Regulator Plug</data>
+      <data key="code_id">C-ALT</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_alt_output">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Alternator B+ Terminal</data>
+      <data key="code_id">C-ALT-B</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <!-- Starter connectors -->
+    <node id="conn_starter_main">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Starter B+ Terminal</data>
+      <data key="code_id">C-START-B</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_starter_sol">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Starter Solenoid Connector</data>
+      <data key="code_id">C-START-S</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <!-- ECU connectors -->
+    <node id="conn_engine_ecu_A">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Engine ECU Connector A</data>
+      <data key="code_id">C-ECU-A</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_engine_ecu_B">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Engine ECU Connector B</data>
+      <data key="code_id">C-ECU-B</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_trans_ecu">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">A/T ECU Connector</data>
+      <data key="code_id">C-AT-ECU</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <!-- ABS and SRS connectors -->
+    <node id="conn_abs_module">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">ABS Module Connector</data>
+      <data key="code_id">C-ABS</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_srs_module">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">SRS ECU Connector</data>
+      <data key="code_id">C-SRS</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <!-- Lights connectors -->
+    <node id="conn_headlamp_L">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Left Headlamp Connector</data>
+      <data key="code_id">C-HL-L</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_headlamp_R">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Right Headlamp Connector</data>
+      <data key="code_id">C-HL-R</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_fog_L">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Left Fog Lamp Connector</data>
+      <data key="code_id">C-FOG-L</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_fog_R">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Right Fog Lamp Connector</data>
+      <data key="code_id">C-FOG-R</data>
+      <data key="anchor_zone">Engine Compartment</data>
+    </node>
+    <node id="conn_tail_lamp_L">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Left Rear Lamp Connector</data>
+      <data key="code_id">C-TL-L</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="conn_tail_lamp_R">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Right Rear Lamp Connector</data>
+      <data key="code_id">C-TL-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="conn_license_lamp_L">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">License Plate Lamp Connector (Left)</data>
+      <data key="code_id">C-PL-L</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="conn_license_lamp_R">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">License Plate Lamp Connector (Right)</data>
+      <data key="code_id">C-PL-R</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <node id="conn_high_stop_lamp">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">High Mount Stop Lamp Connector</data>
+      <data key="code_id">C-HMSL</data>
+      <data key="anchor_zone">Rear Cargo/Tailgate</data>
+    </node>
+    <!-- Switch connectors -->
+    <node id="conn_ignition_switch">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Ignition Switch Connector</data>
+      <data key="code_id">C-IGN-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_turn_hazard_sw">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Turn/Hazard Switch Connector</data>
+      <data key="code_id">C-HAZ-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_wiper_sw">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Wiper Switch Connector</data>
+      <data key="code_id">C-WIP-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_rear_fog_sw">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Rear Fog Switch Connector</data>
+      <data key="code_id">C-RFog-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <node id="conn_defogger_sw">
+      <data key="node_type">connector</data>
+      <data key="canonical_id">Rear Defogger Switch Connector</data>
+      <data key="code_id">C-Defog-SW</data>
+      <data key="anchor_zone">Dash Panel</data>
+    </node>
+    <!-- etc. (Due to space, not all connectors enumerated) -->
+    
+    <!-- Pin Nodes (selected examples for connectors) -->
+    <node id="pin_batt_plus">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Battery + Terminal Pin</data>
+      <data key="code_id">Pin+BATT</data>
+    </node>
+    <node id="pin_batt_minus">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Battery – Terminal Pin</data>
+      <data key="code_id">Pin-BATT</data>
+    </node>
+    <node id="pin_alt_B">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Alternator B+ Pin</data>
+      <data key="code_id">Pin-ALT-B</data>
+    </node>
+    <node id="pin_alt_L">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Alternator Lamp (L) Pin</data>
+      <data key="code_id">Pin-ALT-L</data>
+    </node>
+    <node id="pin_alt_IG">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Alternator Ignition (IG) Pin</data>
+      <data key="code_id">Pin-ALT-IG</data>
+    </node>
+    <node id="pin_alt_FR">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Alternator FR Pin</data>
+      <data key="code_id">Pin-ALT-FR</data>
+    </node>
+    <node id="pin_starter_main">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Starter Main Terminal Pin</data>
+      <data key="code_id">Pin-STA-B</data>
+    </node>
+    <node id="pin_starter_sol">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Starter Solenoid Pin</data>
+      <data key="code_id">Pin-STA-S</data>
+    </node>
+    <node id="pin_ecu_main_power">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Engine ECU Main Power Pin</data>
+      <data key="code_id">Pin-ECU-B</data>
+    </node>
+    <node id="pin_ecu_fuel_pump">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Engine ECU Fuel Pump Control Pin</data>
+      <data key="code_id">Pin-ECU-FP</data>
+    </node>
+    <node id="pin_fuel_pump_pos">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Fuel Pump +12V Pin</data>
+      <data key="code_id">Pin-FP+</data>
+    </node>
+    <node id="pin_fuel_pump_neg">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Fuel Pump Ground Pin</data>
+      <data key="code_id">Pin-FP-</data>
+    </node>
+    <node id="pin_rear_fog_lamp">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Rear Fog Lamp + Pin</data>
+      <data key="code_id">Pin-RFog</data>
+    </node>
+    <node id="pin_door_lock_actuator">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Door Lock Actuator Power Pin</data>
+      <data key="code_id">Pin-DL</data>
+    </node>
+    <node id="pin_reverse_lamp_L">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Left Reverse Lamp + Pin</data>
+      <data key="code_id">Pin-REV-L</data>
+    </node>
+    <node id="pin_reverse_lamp_R">
+      <data key="node_type">pin</data>
+      <data key="canonical_id">Right Reverse Lamp + Pin</data>
+      <data key="code_id">Pin-REV-R</data>
+    </node>
+    <!-- (More pins would be defined for each connector pinout in a complete model) -->
+    
+    <!-- Wire Nodes (with color, gauge, signal, voltage where available) -->
+    <node id="wire_batt_to_main">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Battery to Main Bus Cable</data>
+      <data key="code_id">W-BATT-MAIN</data>
+      <data key="color">W (white)</data>
+      <data key="gauge">25 mm^2</data>
+      <data key="signal">Battery supply</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_batt_to_starter">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Battery to Starter Cable</data>
+      <data key="code_id">W-BATT-STA</data>
+      <data key="color">W (white)</data>
+      <data key="gauge">25 mm^2</data>
+      <data key="signal">Starter feed</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_alt_to_fuse">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Alternator B+ to Fusible Link</data>
+      <data key="code_id">W-ALT-B</data>
+      <data key="color">W (white)</data>
+      <data key="gauge">8 mm^2</data>
+      <data key="signal">Alternator output</data>
+      <data key="voltage">12–14V</data>
+    </node>
+    <node id="wire_main_to_jb">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Main Fuse to Junction Block Wire</data>
+      <data key="code_id">W-MAIN-JB</data>
+      <data key="color">W (white)</data>
+      <data key="gauge">8 mm^2</data>
+      <data key="signal">Main 12V supply</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_abs_feed">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">ABS Power Feed Wire</data>
+      <data key="code_id">W-ABS</data>
+      <data key="color">W-B (white with black)</data>
+      <data key="gauge">6 mm^2</data>
+      <data key="signal">ABS power</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_ign_switch_in">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Ignition Switch Input Wire</data>
+      <data key="code_id">W-IG-IN</data>
+      <data key="color">W (white)</data>
+      <data key="gauge">4 mm^2</data>
+      <data key="signal">IG switch feed</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_ign_switch_acc">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Accessory Output Wire (ACC)</data>
+      <data key="code_id">W-ACC</data>
+      <data key="color">BW (black/white)</data>
+      <data key="gauge">2.0 mm^2</data>
+      <data key="signal">ACC circuit</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_ign_switch_ig">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Ignition Output Wire (IG1)</data>
+      <data key="code_id">W-IG1</data>
+      <data key="color">BW (black/white)</data>
+      <data key="gauge">2.0 mm^2</data>
+      <data key="signal">Ignition circuit</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_ign_switch_st">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Starter Crank Wire (ST)</data>
+      <data key="code_id">W-ST</data>
+      <data key="color">BW (black/white)</data>
+      <data key="gauge">2.0 mm^2</data>
+      <data key="signal">Starter solenoid</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_fuel_pump_feed">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Fuel Pump Feed Wire</data>
+      <data key="code_id">W-FP</data>
+      <data key="color">B (blue)</data>
+      <data key="gauge">1.5 mm^2</data>
+      <data key="signal">Fuel pump +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_fuel_pump_gnd">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Fuel Pump Ground Wire</data>
+      <data key="code_id">W-FP-GND</data>
+      <data key="color">B (black)</data>
+      <data key="gauge">1.5 mm^2</data>
+      <data key="signal">Fuel pump ground</data>
+      <data key="voltage">0V</data>
+    </node>
+    <node id="wire_rear_fog_feed">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Rear Fog Lamp Feed Wire</data>
+      <data key="code_id">W-RFog</data>
+      <data key="color">R (red)</data>
+      <data key="gauge">1.0 mm^2</data>
+      <data key="signal">Rear fog +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_door_lock_feed">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Door Lock Actuators Power Wire</data>
+      <data key="code_id">W-DL</data>
+      <data key="color">G (green)</data>
+      <data key="gauge">1.0 mm^2</data>
+      <data key="signal">Door lock +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_reverse_sw_in">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Reverse Switch Input Wire</data>
+      <data key="code_id">W-REV-IN</data>
+      <data key="color">R (red)</data>
+      <data key="gauge">1.0 mm^2</data>
+      <data key="signal">Rev switch feed</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_reverse_sw_out">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Reverse Switch to Lamps Wire</data>
+      <data key="code_id">W-REV-OUT</data>
+      <data key="color">R-G (red/green)</data>
+      <data key="gauge">1.0 mm^2</data>
+      <data key="signal">Reverse lamp +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_reverse_lamp_L">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Left Reverse Lamp Wire</data>
+      <data key="code_id">W-REV-L</data>
+      <data key="color">R-G (red/green)</data>
+      <data key="gauge">0.85 mm^2</data>
+      <data key="signal">Left reverse +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <node id="wire_reverse_lamp_R">
+      <data key="node_type">wire</data>
+      <data key="canonical_id">Right Reverse Lamp Wire</data>
+      <data key="code_id">W-REV-R</data>
+      <data key="color">R-G (red/green)</data>
+      <data key="gauge">0.85 mm^2</data>
+      <data key="signal">Right reverse +</data>
+      <data key="voltage">12V</data>
+    </node>
+    <!-- (Additional wire nodes would continue for all circuits) -->
+    
+    <!-- Edges: Node Relationships -->
+    <!-- Component to Location (in_location) -->
+    <edge source="comp_engine_ecu" target="loc_dash_panel">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="comp_alternator" target="loc_engine_bay">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="comp_abs_module" target="loc_engine_bay">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="comp_combo_meter" target="loc_dash_panel">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="comp_fuel_pump" target="loc_tailgate">
+      <data key="relationship">in_location</data>
+    </edge>
+    <!-- (in_location edges for all components omitted for brevity) -->
+    
+    <!-- Harness to Location (in_location) if needed -->
+    <edge source="harness_engine" target="loc_engine_bay">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="harness_dash" target="loc_dash_panel">
+      <data key="relationship">in_location</data>
+    </edge>
+    <edge source="harness_floor" target="loc_floor_roof">
+      <data key="relationship">in_location</data>
+    </edge>
+    <!-- (others similarly) -->
+    
+    <!-- Component to Connector (has_connector) -->
+    <edge source="comp_battery" target="conn_batt_positive">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_battery" target="conn_batt_negative">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_alternator" target="conn_alt_plug">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_alternator" target="conn_alt_output">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_starter" target="conn_starter_main">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_starter" target="conn_starter_sol">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_engine_ecu" target="conn_engine_ecu_A">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_engine_ecu" target="conn_engine_ecu_B">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_trans_ecu" target="conn_trans_ecu">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_abs_module" target="conn_abs_module">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_srs_ecu" target="conn_srs_module">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_head_left" target="conn_headlamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_head_right" target="conn_headlamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_fog_left" target="conn_fog_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_fog_right" target="conn_fog_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_tail_left" target="conn_tail_lamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_tail_right" target="conn_tail_lamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_plate_left" target="conn_license_lamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_plate_right" target="conn_license_lamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_lamp_high_stop" target="conn_high_stop_lamp">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_ignition_switch" target="conn_ignition_switch">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_light_switch" target="conn_turn_hazard_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_wiper_switch" target="conn_wiper_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_rear_fog_switch" target="conn_rear_fog_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_defogger_switch" target="conn_defogger_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <!-- (has_connector edges for each component omitted for brevity) -->
+    
+    <!-- Harness to Connector (has_connector) -->
+    <edge source="harness_engine" target="conn_batt_positive">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <!-- (battery negative cable not part of harness, skip harness->conn for batt neg) -->
+    <edge source="harness_engine" target="conn_alt_plug">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_alt_output">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_starter_main">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_starter_sol">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_engine_ecu_A">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_engine_ecu_B">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_trans_ecu">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_abs_module">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_srs_module">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_headlamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_headlamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_fog_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_fog_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_floor" target="conn_tail_lamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_floor" target="conn_tail_lamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_tailgate" target="conn_license_lamp_L">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_tailgate" target="conn_license_lamp_R">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_tailgate" target="conn_high_stop_lamp">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_ignition_switch">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_turn_hazard_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_wiper_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_rear_fog_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_defogger_sw">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <!-- Harness connectors linking harnesses together (Junction Block connectors) -->
+    <edge source="harness_engine" target="conn_JB_engine">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_floor" target="conn_JB_floor">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_JB_dash">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_Ldoor" target="conn_door_L_Apillar">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_Rdoor" target="conn_door_R_Apillar">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_tailgate" target="conn_tailgate_hinge">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_trans" target="conn_trans_engine">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <!-- The other side of these connectors is the Junction Block or mating harness, connect those too: -->
+    <edge source="comp_junction_block" target="conn_JB_engine">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_junction_block" target="conn_JB_floor">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="comp_junction_block" target="conn_JB_dash">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_door_L_Apillar">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_dash" target="conn_door_R_Apillar">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_floor" target="conn_tailgate_hinge">
+      <data key="relationship">has_connector</data>
+    </edge>
+    <edge source="harness_engine" target="conn_trans_engine">
+      <data key="relationship">has_connector</data>
+    </edge>
+    
+    <!-- Connector to Pin (has_pin) -->
+    <edge source="conn_batt_positive" target="pin_batt_plus">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_batt_negative" target="pin_batt_minus">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_alt_output" target="pin_alt_B">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_alt_plug" target="pin_alt_L">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_alt_plug" target="pin_alt_IG">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_alt_plug" target="pin_alt_FR">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_starter_main" target="pin_starter_main">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_starter_sol" target="pin_starter_sol">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_engine_ecu_A" target="pin_ecu_main_power">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_engine_ecu_B" target="pin_ecu_fuel_pump">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_engine_ecu_B" target="pin_ecu_main_power">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_fuel_pump" target="pin_fuel_pump_pos">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_fuel_pump" target="pin_fuel_pump_neg">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_tail_lamp_L" target="pin_reverse_lamp_L">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <edge source="conn_tail_lamp_R" target="pin_reverse_lamp_R">
+      <data key="relationship">has_pin</data>
+    </edge>
+    <!-- (more has_pin edges for all connector pins omitted) -->
+    
+    <!-- Pin to Wire (pin_to_wire) -->
+    <edge source="pin_batt_plus" target="wire_batt_to_main">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_alt_B" target="wire_alt_to_fuse">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_starter_main" target="wire_batt_to_starter">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_alt_L" target="wire_alt_to_fuse">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_alt_IG" target="wire_ign_switch_ig">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_alt_FR" target="wire_alt_to_fuse">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_starter_sol" target="wire_ign_switch_st">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_ecu_main_power" target="wire_main_to_jb">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_ecu_fuel_pump" target="wire_fuel_pump_feed">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_fuel_pump_pos" target="wire_fuel_pump_feed">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_fuel_pump_neg" target="wire_fuel_pump_gnd">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_rear_fog_lamp" target="wire_rear_fog_feed">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_door_lock_actuator" target="wire_door_lock_feed">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_reverse_lamp_L" target="wire_reverse_lamp_L">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <edge source="pin_reverse_lamp_R" target="wire_reverse_lamp_R">
+      <data key="relationship">pin_to_wire</data>
+    </edge>
+    <!-- (pin_to_wire for each pin-wire connection omitted for brevity) -->
+    
+    <!-- Wire to Fuse (wire_to_fuse) -->
+    <edge source="wire_batt_to_main" target="fuse2_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_alt_to_fuse" target="fuse3_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_batt_to_starter" target="fuse2_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_abs_feed" target="fuse1_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_ign_switch_in" target="fuse6_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_ign_switch_acc" target="fuse9_int">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_ign_switch_ig" target="fuse7_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_ign_switch_st" target="fuse6_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_fuel_pump_feed" target="fuse6_int">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_rear_fog_feed" target="fuse7_int">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_door_lock_feed" target="fuse8_int">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_reverse_sw_in" target="fuse17_int">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <edge source="wire_main_to_jb" target="fuse2_eng">
+      <data key="relationship">wire_to_fuse</data>
+    </edge>
+    <!-- ... and so on for each fused wire ... -->
+    
+    <!-- Wire to Relay (wire_to_relay) -->
+    <edge source="wire_ign_switch_ig" target="relay_ignition">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_fuel_pump_feed" target="relay_fuel_pump">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_rear_fog_feed" target="relay_fog">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_batt_to_main" target="relay_starter">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_main_to_jb" target="relay_ignition">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_door_lock_feed" target="relay_pw_main">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <edge source="wire_abs_feed" target="relay_abs">
+      <data key="relationship">wire_to_relay</data>
+    </edge>
+    <!-- ... and others e.g., blower, horn, etc. ... -->
+    
+    <!-- Wire to Splice (wire_to_splice) -->
+    <edge source="wire_door_lock_feed" target="splice_door_lock_pwr">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <edge source="wire_reverse_sw_out" target="splice_reverse_lamp">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <edge source="wire_reverse_lamp_L" target="splice_reverse_lamp">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <edge source="wire_reverse_lamp_R" target="splice_reverse_lamp">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <edge source="wire_fuel_pump_gnd" target="splice_ground_rear">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <edge source="wire_alt_to_fuse" target="splice_ground_engine">
+      <data key="relationship">wire_to_splice</data>
+    </edge>
+    <!-- etc., grouping wires at common nodes -->
+    
+    <!-- Wire to Ground (wire_to_ground) -->
+    <edge source="wire_fuel_pump_gnd" target="ground_point_rear">
+      <data key="relationship">wire_to_ground</data>
+    </edge>
+    <edge source="wire_alt_to_fuse" target="ground_point_engine">
+      <data key="relationship">wire_to_ground</data>
+    </edge>
+    <edge source="wire_batt_to_main" target="ground_point_engine">
+      <data key="relationship">wire_to_ground</data>
+    </edge>
+    <!-- (for chassis grounds, though typically ground wires join splices then ground point) -->
+    
+    <!-- Ground Point to Ground Plane -->
+    <edge source="ground_point_engine" target="ground_plane">
+      <data key="relationship">ground_to_plane</data>
+    </edge>
+    <edge source="ground_point_dash" target="ground_plane">
+      <data key="relationship">ground_to_plane</data>
+    </edge>
+    <edge source="ground_point_rear" target="ground_plane">
+      <data key="relationship">ground_to_plane</data>
+    </edge>
+    
+  </graph>
+</graphml>

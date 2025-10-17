@@ -1,0 +1,545 @@
+{
+  "frame": {
+    "x": "forward",
+    "y": "left",
+    "z": "up"
+  },
+  "vehicle": {
+    "length": 4.2,
+    "width": 1.7,
+    "height": 1.8,
+    "wheelbase": 2.57,
+    "ground_clearance": 0.2
+  },
+  "zones": {
+    "Engine Compartment": {
+      "anchor": [
+        1.3,
+        0,
+        0.6
+      ],
+      "bounds": {
+        "min": [
+          0.7,
+          -0.8,
+          0.2
+        ],
+        "max": [
+          2.1,
+          0.8,
+          1.1
+        ]
+      },
+      "description": "Front engine bay area"
+    },
+    "Dash Panel": {
+      "anchor": [
+        0.3,
+        0,
+        0.9
+      ],
+      "bounds": {
+        "min": [
+          0,
+          -0.7,
+          0.7
+        ],
+        "max": [
+          0.6,
+          0.7,
+          1.2
+        ]
+      },
+      "description": "Dashboard and instrument panel"
+    },
+    "Floor & Roof": {
+      "anchor": [
+        -0.3,
+        0,
+        0.4
+      ],
+      "bounds": {
+        "min": [
+          -1,
+          -0.8,
+          0.1
+        ],
+        "max": [
+          0.4,
+          0.8,
+          1.7
+        ]
+      },
+      "description": "Passenger compartment floor and roof"
+    },
+    "Left Front Door": {
+      "anchor": [
+        0.5,
+        -0.85,
+        0.8
+      ],
+      "bounds": {
+        "min": [
+          0.2,
+          -0.9,
+          0.3
+        ],
+        "max": [
+          0.8,
+          -0.8,
+          1.3
+        ]
+      },
+      "description": "Left front door assembly"
+    },
+    "Right Front Door": {
+      "anchor": [
+        0.5,
+        0.85,
+        0.8
+      ],
+      "bounds": {
+        "min": [
+          0.2,
+          0.8,
+          0.3
+        ],
+        "max": [
+          0.8,
+          0.9,
+          1.3
+        ]
+      },
+      "description": "Right front door assembly"
+    },
+    "Rear Cargo/Tailgate": {
+      "anchor": [
+        -1.5,
+        0,
+        0.7
+      ],
+      "bounds": {
+        "min": [
+          -2.1,
+          -0.8,
+          0.2
+        ],
+        "max": [
+          -1,
+          0.8,
+          1.4
+        ]
+      },
+      "description": "Rear cargo area and tailgate"
+    },
+    "Chassis": {
+      "anchor": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "min": [
+          -2.1,
+          -0.85,
+          -0.1
+        ],
+        "max": [
+          2.1,
+          0.85,
+          0.1
+        ]
+      },
+      "description": "Vehicle chassis and ground plane"
+    }
+  },
+  "harnesses": {
+    "harness_engine": {
+      "path": [
+        [
+          1.6,
+          0,
+          0.6
+        ],
+        [
+          1.2,
+          -0.2,
+          0.7
+        ],
+        [
+          0.9,
+          -0.2,
+          0.8
+        ],
+        [
+          0.6,
+          -0.2,
+          0.85
+        ]
+      ],
+      "thickness": 0.025,
+      "bundleCount": 45
+    },
+    "harness_dash": {
+      "path": [
+        [
+          0.6,
+          -0.2,
+          0.85
+        ],
+        [
+          0.4,
+          0,
+          0.9
+        ],
+        [
+          0.3,
+          0.3,
+          0.9
+        ],
+        [
+          0.2,
+          0,
+          0.8
+        ]
+      ],
+      "thickness": 0.02,
+      "bundleCount": 32
+    },
+    "harness_floor": {
+      "path": [
+        [
+          0.2,
+          0,
+          0.8
+        ],
+        [
+          0,
+          0,
+          0.4
+        ],
+        [
+          -0.5,
+          0,
+          0.3
+        ],
+        [
+          -1.2,
+          0,
+          0.4
+        ]
+      ],
+      "thickness": 0.018,
+      "bundleCount": 28
+    },
+    "harness_Ldoor": {
+      "path": [
+        [
+          0.4,
+          -0.7,
+          0.9
+        ],
+        [
+          0.5,
+          -0.8,
+          0.8
+        ],
+        [
+          0.6,
+          -0.85,
+          0.7
+        ]
+      ],
+      "thickness": 0.012,
+      "bundleCount": 12
+    },
+    "harness_Rdoor": {
+      "path": [
+        [
+          0.4,
+          0.7,
+          0.9
+        ],
+        [
+          0.5,
+          0.8,
+          0.8
+        ],
+        [
+          0.6,
+          0.85,
+          0.7
+        ]
+      ],
+      "thickness": 0.012,
+      "bundleCount": 12
+    },
+    "harness_tailgate": {
+      "path": [
+        [
+          -1.2,
+          0,
+          0.4
+        ],
+        [
+          -1.6,
+          0,
+          0.5
+        ],
+        [
+          -1.9,
+          0,
+          0.7
+        ]
+      ],
+      "thickness": 0.015,
+      "bundleCount": 18
+    }
+  },
+  "materials": {
+    "wire": {
+      "thickness": 0.004
+    },
+    "harness": {
+      "thickness": 0.02
+    },
+    "ground": {
+      "thickness": 0.008
+    },
+    "component": {
+      "opacity": 0.8
+    }
+  },
+  "groups": [
+    {
+      "id": "Chassis",
+      "name": "Chassis",
+      "filter": {
+        "anchor_zone": "Chassis"
+      },
+      "bounds": {
+        "min": [
+          -2.1,
+          -0.85,
+          -0.1
+        ],
+        "max": [
+          2.1,
+          0.85,
+          0.1
+        ]
+      }
+    },
+    {
+      "id": "EngineCompartment",
+      "name": "Engine Compartment",
+      "filter": {
+        "anchor_zone": "Engine Compartment"
+      },
+      "bounds": {
+        "min": [
+          0.7,
+          -0.8,
+          0.2
+        ],
+        "max": [
+          2.1,
+          0.8,
+          1.1
+        ]
+      }
+    },
+    {
+      "id": "DashPanel",
+      "name": "Dash Panel",
+      "filter": {
+        "anchor_zone": "Dash Panel"
+      },
+      "bounds": {
+        "min": [
+          0,
+          -0.7,
+          0.7
+        ],
+        "max": [
+          0.6,
+          0.7,
+          1.2
+        ]
+      }
+    },
+    {
+      "id": "Floor&Roof",
+      "name": "Floor & Roof",
+      "filter": {
+        "anchor_zone": "Floor & Roof"
+      },
+      "bounds": {
+        "min": [
+          -1,
+          -0.8,
+          0.1
+        ],
+        "max": [
+          0.4,
+          0.8,
+          1.7
+        ]
+      }
+    },
+    {
+      "id": "LeftFrontDoor",
+      "name": "Left Front Door",
+      "filter": {
+        "anchor_zone": "Left Front Door"
+      },
+      "bounds": {
+        "min": [
+          0.2,
+          -0.9,
+          0.3
+        ],
+        "max": [
+          0.8,
+          -0.8,
+          1.3
+        ]
+      }
+    },
+    {
+      "id": "RightFrontDoor",
+      "name": "Right Front Door",
+      "filter": {
+        "anchor_zone": "Right Front Door"
+      },
+      "bounds": {
+        "min": [
+          0.2,
+          0.8,
+          0.3
+        ],
+        "max": [
+          0.8,
+          0.9,
+          1.3
+        ]
+      }
+    },
+    {
+      "id": "RearCargo/Tailgate",
+      "name": "Rear Cargo/Tailgate",
+      "filter": {
+        "anchor_zone": "Rear Cargo/Tailgate"
+      },
+      "bounds": {
+        "min": [
+          -2.1,
+          -0.8,
+          0.2
+        ],
+        "max": [
+          -1,
+          0.8,
+          1.4
+        ]
+      }
+    },
+    {
+      "id": "Transmission",
+      "name": "Transmission",
+      "filter": {
+        "anchor_zone": "Transmission"
+      }
+    },
+    {
+      "id": "Chassis/FrontLeft",
+      "name": "Chassis/Front Left",
+      "filter": {
+        "anchor_zone": "Chassis/Front Left"
+      }
+    },
+    {
+      "id": "Chassis/FrontRight",
+      "name": "Chassis/Front Right",
+      "filter": {
+        "anchor_zone": "Chassis/Front Right"
+      }
+    },
+    {
+      "id": "Chassis/RearLeft",
+      "name": "Chassis/Rear Left",
+      "filter": {
+        "anchor_zone": "Chassis/Rear Left"
+      }
+    },
+    {
+      "id": "Chassis/RearRight",
+      "name": "Chassis/Rear Right",
+      "filter": {
+        "anchor_zone": "Chassis/Rear Right"
+      }
+    },
+    {
+      "id": "SteeringWheel",
+      "name": "Steering Wheel",
+      "filter": {
+        "anchor_zone": "Steering Wheel"
+      }
+    },
+    {
+      "id": "RearDoor/Left",
+      "name": "Rear Door/Left",
+      "filter": {
+        "anchor_zone": "Rear Door/Left"
+      }
+    },
+    {
+      "id": "RearDoor/Right",
+      "name": "Rear Door/Right",
+      "filter": {
+        "anchor_zone": "Rear Door/Right"
+      }
+    },
+    {
+      "id": "Seat/Left",
+      "name": "Seat/Left",
+      "filter": {
+        "anchor_zone": "Seat/Left"
+      }
+    },
+    {
+      "id": "Seat/Right",
+      "name": "Seat/Right",
+      "filter": {
+        "anchor_zone": "Seat/Right"
+      }
+    },
+    {
+      "id": "Roof(Interior)",
+      "name": "Roof (Interior)",
+      "filter": {
+        "anchor_zone": "Roof (Interior)"
+      }
+    }
+  ],
+  "instances": {
+    "components": [
+      "component",
+      "fuse",
+      "relay",
+      "bus",
+      "ground_point",
+      "connector"
+    ],
+    "wires": [
+      "wire"
+    ],
+    "harnesses": [
+      "harness",
+      "harness_segment"
+    ],
+    "locations": [
+      "location"
+    ]
+  }
+}

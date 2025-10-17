@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+
+  <!-- =========================
+       0) KEYS (SCHEMA)
+       ========================= -->
+
+  <!-- Core -->
+  <key id="type"           for="node" attr.name="type"           attr.type="string"/>  <!-- enum: Plane, Bus, Location, Harness, HarnessSegment, Component, Connector, Pin, Wire, Splice, GroundPoint, Fuse, Relay, Path, Label -->
+  <key id="name"           for="node" attr.name="name"           attr.type="string"/>
+  <key id="description"    for="node" attr.name="description"    attr.type="string"/>
+  <key id="oem_id"         for="node" attr.name="oem_id"         attr.type="string"/>  <!-- part#/service ref -->
+  <key id="service_ref"    for="node" attr.name="service_ref"    attr.type="string"/>
+  <key id="notes"          for="node" attr.name="notes"          attr.type="string"/>
+
+  <!-- Electrical attributes -->
+  <key id="connector_code" for="node" attr.name="connector_code" attr.type="string"/>
+  <key id="pin_number"     for="node" attr.name="pin_number"     attr.type="string"/>
+  <key id="signal"         for="node" attr.name="signal"         attr.type="string"/>
+  <key id="color"          for="node" attr.name="color"          attr.type="string"/>  <!-- e.g., B/W, G/Y -->
+  <key id="gauge_mm2"      for="node" attr.name="gauge_mm2"      attr.type="double"/>
+  <key id="voltage_v"      for="node" attr.name="voltage_v"      attr.type="double"/>
+  <key id="amperage_a"     for="node" attr.name="amperage_a"     attr.type="double"/>
+  <key id="resistance_ohm" for="node" attr.name="resistance_ohm" attr.type="double"/>
+  <key id="rating"         for="node" attr.name="rating"         attr.type="string"/>  <!-- e.g., relay contact rating -->
+  <key id="fuse_rating_a"  for="node" attr.name="fuse_rating_a"  attr.type="double"/>
+  <key id="fuse_position"  for="node" attr.name="fuse_position"  attr.type="string"/>  <!-- panel slot -->
+  <key id="relay_contacts" for="node" attr.name="relay_contacts" attr.type="string"/>  <!-- e.g., SPST-NO, SPDT -->
+  <key id="is_sensor"      for="node" attr.name="is_sensor"      attr.type="boolean"/>
+  <key id="is_actuator"    for="node" attr.name="is_actuator"    attr.type="boolean"/>
+
+  <!-- Spatial attributes (3D-intent) -->
+  <key id="anchor_zone"    for="node" attr.name="anchor_zone"    attr.type="string"/>  <!-- enum: EngineBay, Dash, Firewall, Floor, Roof, Doors, Rear, Body -->
+  <key id="anchor_xyz"     for="node" attr.name="anchor_xyz"     attr.type="string"/>  <!-- "[x,y,z]" in meters -->
+  <key id="anchor_ypr_deg" for="node" attr.name="anchor_ypr_deg" attr.type="string"/>  <!-- yaw/pitch/roll degrees -->
+  <key id="bbox_m"         for="node" attr.name="bbox_m"         attr.type="string"/>  <!-- "[lx,ly,lz]" -->
+  <key id="side"           for="node" attr.name="side"           attr.type="string"/>  <!-- enum: LH, RH, Center -->
+  <key id="location"       for="node" attr.name="location"       attr.type="string"/>  <!-- human label -->
+
+  <!-- Harness/routing -->
+  <key id="rail"           for="node" attr.name="rail"           attr.type="string"/>  <!-- logical route name -->
+  <key id="bundle_id"      for="node" attr.name="bundle_id"      attr.type="string"/>  <!-- grouping tag -->
+  <key id="path_xyz"       for="node" attr.name="path_xyz"       attr.type="string"/>  <!-- polyline "[[x,y,z],...]" -->
+  <key id="path_length_m"  for="node" attr.name="path_length_m"  attr.type="double"/>
+  <key id="slack_mm"       for="node" attr.name="slack_mm"       attr.type="double"/>
+
+  <!-- Grounding -->
+  <key id="ground_plane"   for="node" attr.name="ground_plane"   attr.type="string"/>  <!-- e.g., Chassis, Engine, Dash -->
+
+  <!-- Edge schema -->
+  <key id="relation"       for="edge" attr.name="relationship"   attr.type="string"/>
+  <key id="edge_notes"     for="edge" attr.name="notes"          attr.type="string"/>
+
+  <!-- =========================
+       1) GRAPH ROOT + METADATA
+       ========================= -->
+  <graph id="vehicle_graph" edgedefault="undirected">
+    <!-- Spatial frame (documentation only):
+         Axes: X=forward, Y=left, Z=up; units=m
+         Origin: centerline at front axle on floor plane (Z=0)
+    -->
+
+    <!-- =========================
+         2) PLANES & BUSES
+         ========================= -->
+    <!-- Ground plane(s) (single source of truth for returns) -->
+    <!-- <node id="plane_chassis"   type=Plane   name="Chassis Ground Plane" anchor_zone="Body" anchor_xyz="[0,0,0]" bbox_m="[L,W,H]" /> -->
+    <!-- Optional electrical buses (positive distribution) -->
+    <!-- <node id="bus_main_12v"    type=Bus     name="Main 12V Bus" anchor_zone="EngineBay" /> -->
+    <!-- <node id="bus_ign_12v"     type=Bus     name="Ignition 12V Bus" anchor_zone="Dash" /> -->
+
+    <!-- =========================
+         3) LOCATIONS / ANCHOR ZONES
+         ========================= -->
+    <!-- Coarse spatial regions for components and ground points -->
+    <!-- <node id="loc_engine_bay"   type=Location name="Engine Compartment" anchor_zone="EngineBay" anchor_xyz="[...]" bbox_m="[...]" /> -->
+    <!-- <node id="loc_dashboard"    type=Location name="Dashboard"          anchor_zone="Dash"      anchor_xyz="[...]" /> -->
+    <!-- <node id="loc_rear_body"    type=Location name="Rear Body"          anchor_zone="Rear"      anchor_xyz="[...]" /> -->
+
+    <!-- =========================
+         4) HARNESS / RAILS
+         ========================= -->
+    <!-- Top-level harnesses (each may hold segments) -->
+    <!-- <node id="harness_engine_bay" type=Harness name="Engine Bay Main Harness" rail="EngineBay_Main" path_xyz="[[...],[...]]" /> -->
+    <!-- <node id="harness_dash"       type=Harness name="Dash Main Harness"       rail="Dash_Main"       path_xyz="[[...],[...]]" /> -->
+    <!-- <node id="harness_floor"      type=Harness name="Floor-to-Rear Harness"   rail="Floor_Channel"   path_xyz="[[...],[...]]" /> -->
+
+    <!-- Optional: per-harness segments to improve 3D fidelity -->
+    <!-- <node id="seg_dash_center"    type=HarnessSegment name="Dash Center Segment" rail="Dash_Main" path_xyz="[[...],[...]]" /> -->
+
+    <!-- =========================
+         5) COMPONENTS (Devices)
+         ========================= -->
+    <!-- Components are physical devices; pins belong to connectors or directly to components -->
+    <!-- <node id="comp_battery"      type=Component name="Battery 12V" anchor_zone="EngineBay" anchor_xyz="[...]" bbox_m="[...]" /> -->
+    <!-- <node id="comp_alternator"   type=Component name="Alternator"  anchor_zone="EngineBay" anchor_xyz="[...]" /> -->
+    <!-- <node id="comp_starter"      type=Component name="Starter Motor" is_actuator="true" anchor_zone="EngineBay" /> -->
+    <!-- <node id="comp_ecu_4g94"     type=Component name="Engine ECU 4G94" anchor_zone="Dash" anchor_xyz="[...]" /> -->
+    <!-- <node id="comp_fuel_pump"    type=Component name="Fuel Pump" anchor_zone="Rear" anchor_xyz="[...]" /> -->
+    <!-- ... add all systems (lighting, SRS, ABS, HVAC, body, audio, power windows, locks, etc.) ... -->
+
+    <!-- =========================
+         6) CONNECTORS & PINS
+         ========================= -->
+    <!-- Connector grouping pins; use connector_code to align with manual -->
+    <!-- <node id="conn_ecu94"        type=Connector name="ECU Connector 4G94" connector_code="C-ECU-94" anchor_zone="Dash" /> -->
+    <!-- <node id="pin_ecu94_ckp"     type=Pin       name="ECU CKP Signal" pin_number="CKP+" signal="Crank Signal" anchor_zone="Dash" /> -->
+    <!-- <node id="pin_batt_pos"      type=Pin       name="Battery +" pin_number="+" signal="BATT+" anchor_zone="EngineBay" /> -->
+    <!-- <node id="pin_batt_neg"      type=Pin       name="Battery -" pin_number="-" signal="BATT-" anchor_zone="EngineBay" /> -->
+    <!-- Bulkhead connectors for harness pass-throughs -->
+    <!-- <node id="conn_firewall_FB1" type=Connector name="Firewall Bulkhead FB1" connector_code="FB1" anchor_zone="Firewall" /> -->
+    <!-- <node id="pin_FB1_01"        type=Pin       name="FB1-01" pin_number="01" anchor_zone="Firewall" /> -->
+
+    <!-- =========================
+         7) WIRES / SPLICES / GROUNDS / FUSES / RELAYS
+         ========================= -->
+    <!-- Wires carry electrical and a 3D path -->
+    <!-- <node id="wire_batt_to_main" type=Wire name="Battery to Main Fuse" color="W" gauge_mm2="16.0" voltage_v="12" signal="BATT FEED" rail="EngineBay_Main" path_xyz="[[...],[...]]" slack_mm="20"/> -->
+    <!-- <node id="wire_start_sig"    type=Wire name="Starter Signal" color="B/R" gauge_mm2="1.0" voltage_v="12" rail="Dash_Main" path_xyz="[[...],[...]]"/> -->
+    <!-- Splices (explicit junctions) -->
+    <!-- <node id="splice_IGN01"      type=Splice name="Ignition Feed Splice" anchor_zone="Dash" anchor_xyz="[...]" /> -->
+    <!-- Ground points (physical bolts) -->
+    <!-- <node id="gnd_G101"          type=GroundPoint name="Engine Ground G101" ground_plane="Chassis" anchor_zone="EngineBay" anchor_xyz="[...]" /> -->
+    <!-- Fuses (with ratings + panel slot) -->
+    <!-- <node id="fuse_eng_03"       type=Fuse name="Engine Fuse 3" fuse_rating_a="100" fuse_position="ENG-03" anchor_zone="EngineBay" /> -->
+    <!-- Relays -->
+    <!-- <node id="relay_starter"     type=Relay name="Starter Relay" relay_contacts="SPST-NO" anchor_zone="Dash" /> -->
+
+    <!-- =========================
+         8) RELATIONSHIP VOCAB (EDGES)
+         ========================= -->
+    <!-- Pick from the controlled vocabulary below for 'relationship' edge data -->
+
+    <!-- Containment / Composition -->
+    <!-- has_connector: Component -> Connector -->
+    <!-- connector_pin: Connector -> Pin -->
+    <!-- has_pin:      Component -> Pin (if no intermediate Connector) -->
+    <!-- part_of:      Node -> Parent group (e.g., Wire -> Harness, HarnessSegment -> Harness) -->
+    <!-- located_in:   Node -> Location -->
+    <!-- mounted_to:   Node -> Plane (e.g., GroundPoint -> plane_chassis) -->
+
+    <!-- Electrical connectivity -->
+    <!-- pin_to_wire:  Pin -> Wire -->
+    <!-- wire_to_pin:  Wire -> Pin -->
+    <!-- wire_to_fuse: Wire -> Fuse -->
+    <!-- fuse_to_wire: Fuse -> Wire -->
+    <!-- fuse_to_component: Fuse -> Component -->
+    <!-- wire_to_component: Wire -> Component -->
+    <!-- component_to_wire: Component -> Wire -->
+    <!-- pin_to_ground: Pin -> GroundPoint -->
+    <!-- wire_to_ground: Wire -> GroundPoint -->
+    <!-- ground_to_plane: GroundPoint -> Plane -->
+    <!-- bus_feed:     Fuse/Pin/Wire -> Bus -->
+    <!-- bus_to_wire:  Bus -> Wire -->
+    <!-- splice_join:  Splice -> Wire (many) -->
+
+    <!-- Routing / Spatial -->
+    <!-- routed_on:    Wire -> Harness or HarnessSegment -->
+    <!-- passes_through: Wire -> Connector (bulkhead) -->
+    <!-- anchored_at:  Component/Connector/Splice/GroundPoint -> anchor (Location or xyz) -->
+
+    <!-- =========================
+         9) CONTROLLED VOCAB (ENUMS)
+         ========================= -->
+    <!-- type (node): Plane | Bus | Location | Harness | HarnessSegment | Component | Connector | Pin | Wire | Splice | GroundPoint | Fuse | Relay | Path | Label -->
+    <!-- anchor_zone: EngineBay | Dash | Firewall | Floor | Roof | Doors | Rear | Body -->
+    <!-- side: LH | RH | Center -->
+    <!-- ground_plane: Chassis | Engine | Dash -->
+    <!-- relation (edge): has_connector | connector_pin | has_pin | part_of | located_in | mounted_to | pin_to_wire | wire_to_pin | wire_to_fuse | fuse_to_wire | fuse_to_component | wire_to_component | component_to_wire | pin_to_ground | wire_to_ground | ground_to_plane | bus_feed | bus_to_wire | splice_join | routed_on | passes_through | anchored_at -->
+
+    <!-- =========================
+         10) MINIMAL WIRED EXAMPLE (COMMENTED OUT)
+         =========================
+    <node id="plane_chassis"><data key="type">Plane</data><data key="name">Chassis Ground Plane</data></node>
+    <node id="gnd_G101"><data key="type">GroundPoint</data><data key="name">G101</data><data key="ground_plane">Chassis</data></node>
+    <edge source="gnd_G101" target="plane_chassis"><data key="relation">ground_to_plane</data></edge>
+
+    <node id="comp_battery"><data key="type">Component</data><data key="name">Battery</data></node>
+    <node id="pin_batt_pos"><data key="type">Pin</data><data key="pin_number">+</data></node>
+    <edge source="comp_battery" target="pin_batt_pos"><data key="relation">has_pin</data></edge>
+
+    <node id="fuse_main"><data key="type">Fuse</data><data key="fuse_rating_a">60</data></node>
+    <node id="wire_batt_to_fuse"><data key="type">Wire</data><data key="color">W</data></node>
+    <edge source="pin_batt_pos" target="wire_batt_to_fuse"><data key="relation">pin_to_wire</data></edge>
+    <edge source="wire_batt_to_fuse" target="fuse_main"><data key="relation">wire_to_fuse</data></edge>
+    -->
+
+  </graph>
+</graphml>
