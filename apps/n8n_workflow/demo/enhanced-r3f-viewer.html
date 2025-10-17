@@ -328,6 +328,25 @@
             background: #f44336;
         }
         
+        .legend {
+            margin-top: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
         .zone-filter {
             margin: 5px 0;
         }
@@ -471,6 +490,7 @@
                     <button class="btn active" id="show-harnesses">Harnesses</button>
                     <button class="btn" id="show-zones">Zone Bounds</button>
                     <button class="btn" id="show-labels">Labels</button>
+                    <button class="btn active" id="show-hover">Hover Info</button>
                     <button class="btn" id="realistic-view">Realistic View</button>
                 </div>
                 
@@ -484,10 +504,36 @@
                     <button class="btn" id="camera-engine">Engine Bay</button>
                     <button class="btn" id="camera-dashboard">Dashboard</button>
                 </div>
+                <div class="controls">
+                    <button class="btn active" id="orbit-mode">🌍 Orbit Mode</button>
+                    <button class="btn" id="fly-mode">✈️ Fly Mode</button>
+                    <button class="btn" id="walk-mode">🚶 Walk Mode</button>
+                </div>
                 <div class="coordinate-display">
                     🖱️ <strong>Mouse:</strong> Left drag = Orbit, Right drag = Pan, Wheel = Zoom<br>
                     ⌨️ <strong>Keyboard:</strong> WASD + QE (up/down), Shift = Fast, Ctrl = Slow<br>
                     🔄 <strong>Reset:</strong> R key or Overview button
+                </div>
+                
+                <!-- Wire Color Legend -->
+                <h3>🎨 Wire Color Legend</h3>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #ff0000;"></span>
+                        <span>Power Distribution (Battery → Fuses/Relays)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #000000;"></span>
+                        <span>Ground Connections (Battery − → Components)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #00ff00;"></span>
+                        <span>Component Circuits (Components → Power)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #666666;"></span>
+                        <span>Wire Segments (Pin ↔ Splice connections)</span>
+                    </div>
                 </div>
                 
                 <!-- Harness Legend -->
@@ -543,7 +589,9 @@
                 this.showHarnesses = true;
                 this.showZones = false;
                 this.showLabels = false;
+                this.showHover = true;
                 this.realisticView = false;
+                this.cameraMode = 'orbit'; // orbit, fly, walk
                 
                 // Camera movement state
                 this.keyState = {};
@@ -564,6 +612,8 @@
                         bus: new THREE.MeshLambertMaterial({ color: 0xe91e63, opacity: 0.8, transparent: true }),
                         ground: new THREE.MeshLambertMaterial({ color: 0x424242, opacity: 0.8, transparent: true }),
                         connector: new THREE.MeshLambertMaterial({ color: 0x9c27b0, opacity: 0.8, transparent: true }),
+                        splice: new THREE.MeshLambertMaterial({ color: 0xf44336, opacity: 0.9, transparent: true }),
+                        pin: new THREE.MeshLambertMaterial({ color: 0xffc107, opacity: 0.9, transparent: true }),
                         selected: new THREE.MeshLambertMaterial({ color: 0xffeb3b, opacity: 1.0, transparent: false })
                     },
                     wire: {
@@ -953,6 +1003,18 @@
                             material = this.materials.component.connector;
                             break;
                             
+                        case 'splice':
+                            // Enhanced splice visualization with connection indicators
+                            geometry = this.createSpliceGeometry(node);
+                            material = this.materials.component.splice;
+                            break;
+                            
+                        case 'pin':
+                            // Small cylinder for electrical pins
+                            geometry = new THREE.CylinderGeometry(0.005, 0.005, 0.015, 6);
+                            material = this.materials.component.pin;
+                            break;
+                            
                         default:
                             geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
                             material = this.materials.component.default;
@@ -1013,72 +1075,382 @@
                 const wireGroup = new THREE.Group();
                 wireGroup.name = 'wires';
                 
-                for (const edge of this.graphModel.edges) {
-                    const sourceNode = this.graphModel.nodesById[edge.source];
-                    const targetNode = this.graphModel.nodesById[edge.target];
+                // Build electrical topology by processing different relationship types
+                this.buildElectricalWires(wireGroup);
+                
+                this.scene.add(wireGroup);
+            }
+            
+            buildElectricalWires(wireGroup) {
+                console.log('Building complete electrical circuits...');
+                
+                // Strategy 1: Create wire segments for direct electrical relationships
+                this.createDirectElectricalConnections(wireGroup);
+                
+                // Strategy 2: Create complete circuits from components to power sources
+                this.createCompleteCircuits(wireGroup);
+            }
+            
+            createDirectElectricalConnections(wireGroup) {
+                // Find all wire nodes and create their direct connections
+                const wireNodes = Object.values(this.graphModel.nodesById).filter(n => n.node_type === 'wire');
+                console.log(`Creating direct connections for ${wireNodes.length} wire nodes`);
+                
+                wireNodes.forEach(wireNode => {
+                    this.createElectricalPath(wireGroup, wireNode);
+                });
+            }
+            
+            createCompleteCircuits(wireGroup) {
+                // First, connect battery to main power distribution
+                this.createPowerDistribution(wireGroup);
+                
+                // Create ground distribution
+                this.createGroundDistribution(wireGroup);
+                
+                // Then create component circuits
+                const components = Object.values(this.graphModel.nodesById).filter(n => 
+                    n.node_type === 'component' && n.anchor_xyz
+                );
+                
+                console.log(`Creating complete circuits for ${components.length} components`);
+                
+                components.forEach(component => {
+                    this.createComponentCircuit(wireGroup, component);
+                });
+            }
+            
+            createPowerDistribution(wireGroup) {
+                // Find battery and main fuses/relays
+                const battery = Object.values(this.graphModel.nodesById).find(n => 
+                    n.id.includes('battery') && n.anchor_xyz
+                );
+                const mainFuses = Object.values(this.graphModel.nodesById).filter(n => 
+                    n.node_type === 'fuse' && n.anchor_xyz && 
+                    (n.id.includes('main') || n.id.includes('eng'))
+                );
+                const mainRelays = Object.values(this.graphModel.nodesById).filter(n => 
+                    n.node_type === 'relay' && n.anchor_xyz
+                );
+                
+                if (battery) {
+                    // Connect battery to main fuses
+                    mainFuses.forEach(fuse => {
+                        this.createCircuitWire(wireGroup, battery, fuse, 'power');
+                        console.log(`Power distribution: ${battery.id} → ${fuse.id}`);
+                    });
                     
-                    if (sourceNode?.anchor_xyz && targetNode?.anchor_xyz) {
-                        const sourcePos = new THREE.Vector3(...sourceNode.anchor_xyz);
-                        const targetPos = new THREE.Vector3(...targetNode.anchor_xyz);
-                        
-                        // Find the best harness route for this wire connection
-                        const wireRoute = this.findBestHarnessRoute(sourceNode, targetNode);
-                        
-                        if (wireRoute && wireRoute.length > 0) {
-                            // Create wire that follows the harness route
-                            const wirePoints = this.createWireAlongRoute(sourcePos, targetPos, wireRoute);
-                            const wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
-                            
-                            // Color wire based on node color or type
-                            let wireColor = 0x666666;
-                            if (sourceNode.color) {
-                                wireColor = this.parseWireColor(sourceNode.color);
-                            }
-                            
-                            const wireMaterial = new THREE.LineBasicMaterial({ 
-                                color: wireColor,
-                                opacity: 0.8,
-                                transparent: true,
-                                linewidth: 2
+                    // Connect battery to main relays
+                    mainRelays.slice(0, 2).forEach(relay => { // Limit to first 2 relays
+                        this.createCircuitWire(wireGroup, battery, relay, 'power');
+                        console.log(`Power distribution: ${battery.id} → ${relay.id}`);
+                    });
+                }
+            }
+            
+            createGroundDistribution(wireGroup) {
+                // Find ground points and components
+                const groundPoints = Object.values(this.graphModel.nodesById).filter(n => 
+                    n.node_type === 'ground_point' && n.anchor_xyz
+                );
+                const battery = Object.values(this.graphModel.nodesById).find(n => 
+                    n.id.includes('battery') && n.anchor_xyz
+                );
+                
+                console.log(`Found ${groundPoints.length} ground points`);
+                
+                if (battery) {
+                    // Connect battery negative to main ground points
+                    groundPoints.forEach(ground => {
+                        this.createCircuitWire(wireGroup, battery, ground, 'ground');
+                        console.log(`Ground distribution: ${battery.id} → ${ground.id}`);
+                    });
+                }
+                
+                // Connect components to nearest ground points
+                const components = Object.values(this.graphModel.nodesById).filter(n => 
+                    n.node_type === 'component' && n.anchor_xyz
+                );
+                
+                components.forEach(component => {
+                    const nearestGround = groundPoints.find(gp => 
+                        gp.anchor_zone === component.anchor_zone
+                    );
+                    if (nearestGround) {
+                        this.createCircuitWire(wireGroup, component, nearestGround, 'ground');
+                    }
+                });
+            }
+            
+            createComponentCircuit(wireGroup, component) {
+                // Try to find a path from this component to power sources (battery, fuses, relays)
+                const powerSources = Object.values(this.graphModel.nodesById).filter(n => 
+                    ['fuse', 'relay', 'ground_point'].includes(n.node_type) && n.anchor_xyz
+                );
+                
+                // Find the closest power source in the same or connected zones
+                const componentZone = component.anchor_zone;
+                const nearbyPowerSources = powerSources.filter(ps => {
+                    const psZone = ps.anchor_zone;
+                    // Same zone or connected zones (engine ↔ dash ↔ floor)
+                    return psZone === componentZone || 
+                           (componentZone === 'Engine Compartment' && psZone === 'Dash Panel') ||
+                           (componentZone === 'Dash Panel' && psZone === 'Engine Compartment') ||
+                           (componentZone === 'Dash Panel' && psZone === 'Floor & Roof') ||
+                           (componentZone === 'Floor & Roof' && psZone === 'Dash Panel');
+                });
+                
+                if (nearbyPowerSources.length > 0) {
+                    // Connect to the nearest power source
+                    const powerSource = nearbyPowerSources[0];
+                    this.createCircuitWire(wireGroup, component, powerSource, 'circuit');
+                    console.log(`Created circuit: ${component.id} → ${powerSource.id}`);
+                }
+            }
+            
+            createCircuitWire(wireGroup, sourceNode, targetNode, circuitType) {
+                const sourcePos = this.getNodePosition(sourceNode);
+                const targetPos = this.getNodePosition(targetNode);
+                
+                if (!sourcePos || !targetPos) return;
+                
+                // Find appropriate harness route
+                const wireRoute = this.findBestHarnessRoute(sourceNode, targetNode);
+                
+                let wireGeometry, wirePoints;
+                
+                if (wireRoute && wireRoute.length > 0) {
+                    wirePoints = this.createWireAlongRoute(sourcePos, targetPos, wireRoute);
+                    wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
+                } else {
+                    // Create curved connection
+                    const midPoint = sourcePos.clone().lerp(targetPos, 0.5);
+                    midPoint.z += 0.1; // Higher curve for circuit wires
+                    
+                    const curve = new THREE.QuadraticBezierCurve3(sourcePos, midPoint, targetPos);
+                    wirePoints = curve.getPoints(30);
+                    wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
+                }
+                
+                // Different colors for different circuit types
+                let wireColor = 0x666666;
+                let opacity = 0.6;
+                let lineWidth = 1;
+                
+                switch(circuitType) {
+                    case 'power':
+                        wireColor = 0xff0000; // Red for power distribution
+                        opacity = 0.8;
+                        lineWidth = 3;
+                        break;
+                    case 'ground':
+                        wireColor = 0x000000; // Black for ground connections
+                        opacity = 0.9;
+                        lineWidth = 2;
+                        break;
+                    case 'circuit':
+                        wireColor = 0x00ff00; // Green for component circuits
+                        opacity = 0.7;
+                        lineWidth = 2;
+                        break;
+                    default:
+                        wireColor = 0x666666; // Gray for others
+                }
+                
+                const wireMaterial = new THREE.LineBasicMaterial({ 
+                    color: wireColor,
+                    opacity: opacity,
+                    transparent: true,
+                    linewidth: lineWidth
+                });
+                
+                const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
+                wireMesh.userData = { 
+                    sourceNode, 
+                    targetNode, 
+                    type: 'circuit_wire',
+                    circuitType
+                };
+                
+                wireGroup.add(wireMesh);
+                this.wireMeshes[`circuit_${sourceNode.id}_${targetNode.id}`] = wireMesh;
+            }
+            
+            createElectricalPath(wireGroup, wireNode) {
+                // Find all connections for this wire
+                const wireConnections = this.graphModel.edges.filter(e => 
+                    e.source === wireNode.id || e.target === wireNode.id
+                );
+                
+                if (wireConnections.length < 2) {
+                    console.warn(`Wire ${wireNode.id} has insufficient connections: ${wireConnections.length}`);
+                    return;
+                }
+                
+                // Group connections by relationship type
+                const endpoints = [];
+                
+                wireConnections.forEach(edge => {
+                    let endpointNode = null;
+                    let relationship = edge.relationship;
+                    
+                    if (edge.source === wireNode.id) {
+                        // Wire is source, target is endpoint
+                        endpointNode = this.graphModel.nodesById[edge.target];
+                    } else {
+                        // Wire is target, source is endpoint  
+                        endpointNode = this.graphModel.nodesById[edge.source];
+                    }
+                    
+                    if (endpointNode) {
+                        const endpointPos = this.getNodePosition(endpointNode);
+                        if (endpointPos) {
+                            endpoints.push({
+                                node: endpointNode,
+                                position: endpointPos,
+                                relationship: relationship
                             });
-                            
-                            const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
-                            wireMesh.userData = { edge, sourceNode, targetNode, type: 'wire', route: wireRoute };
-                            
-                            wireGroup.add(wireMesh);
-                            this.wireMeshes[`${edge.source}_${edge.target}`] = wireMesh;
-                        } else {
-                            // Fallback to direct connection if no harness route found
-                            const midPoint = sourcePos.clone().lerp(targetPos, 0.5);
-                            midPoint.z += 0.05; // Minimal curve
-                            
-                            const curve = new THREE.QuadraticBezierCurve3(sourcePos, midPoint, targetPos);
-                            const points = curve.getPoints(20);
-                            const wireGeometry = new THREE.BufferGeometry().setFromPoints(points);
-                            
-                            let wireColor = 0x666666;
-                            if (sourceNode.color) {
-                                wireColor = this.parseWireColor(sourceNode.color);
-                            }
-                            
-                            const wireMaterial = new THREE.LineBasicMaterial({ 
-                                color: wireColor,
-                                opacity: 0.6,
-                                transparent: true,
-                                linewidth: 1
-                            });
-                            
-                            const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
-                            wireMesh.userData = { edge, sourceNode, targetNode, type: 'wire' };
-                            
-                            wireGroup.add(wireMesh);
-                            this.wireMeshes[`${edge.source}_${edge.target}`] = wireMesh;
+                        }
+                    }
+                });
+                
+                // Create wire segments between all valid endpoints
+                if (endpoints.length >= 2) {
+                    console.log(`Creating electrical path for wire ${wireNode.id} with ${endpoints.length} endpoints`);
+                    
+                    // Connect all endpoints in a hub pattern (star topology)
+                    for (let i = 0; i < endpoints.length; i++) {
+                        for (let j = i + 1; j < endpoints.length; j++) {
+                            this.createPhysicalWire(wireGroup, wireNode, endpoints[i], endpoints[j]);
+                        }
+                    }
+                } else {
+                    console.warn(`Wire ${wireNode.id} has only ${endpoints.length} positioned endpoints`);
+                }
+            }
+            
+            createPhysicalWire(wireGroup, wireNode, endpoint1, endpoint2) {
+                const sourcePos = endpoint1.position;
+                const targetPos = endpoint2.position;
+                
+                // Use the wire's rail information for harness routing
+                let wireRoute = null;
+                if (wireNode.rail && this.sceneConfig?.harnesses?.[wireNode.rail]) {
+                    const harness = this.sceneConfig.harnesses[wireNode.rail];
+                    wireRoute = harness.path_xyz;
+                    console.log(`Using rail ${wireNode.rail} for wire ${wireNode.id} with ${wireRoute?.length || 0} path points`);
+                } else {
+                    // Fallback to zone-based harness routing
+                    wireRoute = this.findBestHarnessRoute(endpoint1.node, endpoint2.node);
+                    console.log(`Using zone-based routing for wire ${wireNode.id}`);
+                }
+                
+                let wireGeometry, wirePoints;
+                
+                if (wireRoute && wireRoute.length > 0) {
+                    // Create wire that follows the harness route
+                    wirePoints = this.createWireAlongRoute(sourcePos, targetPos, wireRoute);
+                    wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
+                } else {
+                    // Fallback to direct connection if no harness route found
+                    const midPoint = sourcePos.clone().lerp(targetPos, 0.5);
+                    midPoint.z += 0.05; // Minimal curve
+                    
+                    const curve = new THREE.QuadraticBezierCurve3(sourcePos, midPoint, targetPos);
+                    wirePoints = curve.getPoints(20);
+                    wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
+                }
+                
+                // Color wire based on wire node properties
+                let wireColor = 0x666666;
+                if (wireNode.color) {
+                    wireColor = this.parseWireColor(wireNode.color);
+                }
+                
+                // Make wire thicker for special connections
+                let lineWidth = 2;
+                if (endpoint1.relationship === 'wire_to_splice' || endpoint2.relationship === 'wire_to_splice') {
+                    lineWidth = 3;
+                }
+                
+                const wireMaterial = new THREE.LineBasicMaterial({ 
+                    color: wireColor,
+                    opacity: 0.8,
+                    transparent: true,
+                    linewidth: lineWidth
+                });
+                
+                const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
+                wireMesh.userData = { 
+                    wireNode, 
+                    endpoint1: endpoint1.node, 
+                    endpoint2: endpoint2.node, 
+                    type: 'wire',
+                    wireId: wireNode.id
+                };
+                
+                wireGroup.add(wireMesh);
+                this.wireMeshes[`${wireNode.id}_${endpoint1.node.id}_${endpoint2.node.id}`] = wireMesh;
+                
+                console.log(`Created physical wire: ${endpoint1.node.id} ↔ ${endpoint2.node.id} via ${wireNode.id}`);
+            }
+            
+            getNodePosition(node) {
+                // If node has anchor_xyz, use it directly
+                if (node.anchor_xyz) {
+                    return new THREE.Vector3(...node.anchor_xyz);
+                }
+                
+                // For pins and splices without positions, try to find connected component position
+                if (node.node_type === 'pin') {
+                    // Find connector that has this pin
+                    const connectorEdge = this.graphModel.edges.find(e => 
+                        e.target === node.id && e.relationship === 'has_pin'
+                    );
+                    if (connectorEdge) {
+                        const connector = this.graphModel.nodesById[connectorEdge.source];
+                        if (connector?.anchor_xyz) {
+                            // Offset pin slightly from connector
+                            const connPos = new THREE.Vector3(...connector.anchor_xyz);
+                            connPos.z += 0.02; // Small offset for pin
+                            return connPos;
                         }
                     }
                 }
                 
-                this.scene.add(wireGroup);
-                console.log(`🔌 Created ${Object.keys(this.wireMeshes).length} wire connections with harness routing`);
+                // For splices, use their anchor_zone default position or return null
+                if (node.node_type === 'splice' && node.anchor_zone) {
+                    // Use zone center as fallback
+                    const zoneDefaults = {
+                        'Engine Compartment': [1.0, 0, 0.7],
+                        'Dash Panel': [0.3, 0, 0.9],
+                        'Floor & Roof': [-0.3, 0, 0.4],
+                        'Rear Cargo/Tailgate': [-1.5, 0, 0.7]
+                    };
+                    const defaultPos = zoneDefaults[node.anchor_zone];
+                    if (defaultPos) {
+                        return new THREE.Vector3(...defaultPos);
+                    }
+                }
+                
+                return null;
+            }
+            
+            createSpliceGeometry(spliceNode) {
+                // Count connected wires to determine splice size
+                const connectedWires = this.graphModel.edges.filter(e => 
+                    e.target === spliceNode.id && e.relationship === 'wire_to_splice'
+                ).length;
+                
+                // Scale splice size based on number of connections
+                const baseSize = 0.015;
+                const scaleFactor = Math.max(1.0, Math.sqrt(connectedWires / 2));
+                const spliceSize = baseSize * scaleFactor;
+                
+                // Create a junction box with connection points
+                const geometry = new THREE.BoxGeometry(spliceSize, spliceSize, spliceSize * 0.5);
+                
+                return geometry;
             }
             
             findBestHarnessRoute(sourceNode, targetNode) {
@@ -1295,6 +1667,7 @@
                 });
                 
                 this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    // Check for drag operation
                     if (mouseDownPos.length() > 0) {
                         const distance = Math.sqrt(
                             Math.pow(event.clientX - mouseDownPos.x, 2) + 
@@ -1303,6 +1676,15 @@
                         if (distance > 5) { // 5 pixel threshold for drag detection
                             isDragOperation = true;
                         }
+                    }
+                    
+                    // Handle hover only if not dragging and hover is enabled
+                    if (!isDragOperation && this.showHover) {
+                        this.handleHover(event);
+                    } else if (!this.showHover && this.hoveredObject) {
+                        // Hide hover label if hover is disabled
+                        this.hoveredObject = null;
+                        this.hideHoverLabel();
                     }
                 });
                 
@@ -1313,13 +1695,6 @@
                     }
                     mouseDownPos.set(0, 0);
                     isDragOperation = false;
-                });
-                
-                // Mouse hover for component labels
-                this.renderer.domElement.addEventListener('mousemove', (event) => {
-                    if (!isDragOperation) {
-                        this.handleHover(event);
-                    }
                 });
                 
                 // Keyboard controls for camera movement
@@ -1353,6 +1728,10 @@
                     this.toggleLabels();
                 });
                 
+                document.getElementById('show-hover').addEventListener('click', () => {
+                    this.toggleHover();
+                });
+                
                 document.getElementById('realistic-view').addEventListener('click', () => {
                     this.toggleRealisticView();
                 });
@@ -1380,6 +1759,19 @@
                 
                 document.getElementById('camera-dashboard').addEventListener('click', () => {
                     this.setCameraPosition('dashboard');
+                });
+                
+                // Camera mode buttons
+                document.getElementById('orbit-mode').addEventListener('click', () => {
+                    this.setCameraMode('orbit');
+                });
+                
+                document.getElementById('fly-mode').addEventListener('click', () => {
+                    this.setCameraMode('fly');
+                });
+                
+                document.getElementById('walk-mode').addEventListener('click', () => {
+                    this.setCameraMode('walk');
                 });
             }
             
@@ -1657,6 +2049,18 @@
                 btn.classList.toggle('active', this.realisticView);
             }
             
+            toggleHover() {
+                this.showHover = !this.showHover;
+                const btn = document.getElementById('show-hover');
+                btn.classList.toggle('active', this.showHover);
+                
+                // Hide any active hover labels if disabling
+                if (!this.showHover && this.hoveredObject) {
+                    this.hoveredObject = null;
+                    this.hideHoverLabel();
+                }
+            }
+            
             handleKeyboardInput(event) {
                 // Handle special keys immediately
                 if (event.code === 'KeyR') {
@@ -1720,27 +2124,33 @@
                 const positions = {
                     overview: {
                         position: [3, -2, 2],
-                        target: [0, 0, 0.5]
+                        target: [0, 0, 0.5],
+                        description: "Full vehicle overview"
                     },
                     front: {
-                        position: [4, 0, 1],
-                        target: [0, 0, 0.5]
+                        position: [4.5, 0, 1],
+                        target: [0, 0, 0.5],
+                        description: "Front view - grille and bumper"
                     },
                     side: {
-                        position: [0, -4, 1],
-                        target: [0, 0, 0.5]
+                        position: [0, -4.5, 1],
+                        target: [0, 0, 0.5],
+                        description: "Side profile view"
                     },
                     top: {
-                        position: [0, 0, 4],
-                        target: [0, 0, 0.5]
+                        position: [0, 0, 5],
+                        target: [0, 0, 0],
+                        description: "Top-down schematic view"
                     },
                     engine: {
-                        position: [2.5, -1, 1.2],
-                        target: [1.3, 0, 0.6]
+                        position: [2.8, -0.8, 1.4],
+                        target: [1.5, 0, 0.7],
+                        description: "Engine bay detail view"
                     },
                     dashboard: {
-                        position: [1, -2, 1.5],
-                        target: [0.3, 0, 0.9]
+                        position: [0.8, -1.5, 1.3],
+                        target: [0.2, 0, 0.9],
+                        description: "Dashboard and interior view"
                     }
                 };
                 
