@@ -1,0 +1,437 @@
+{
+  "testName": "3D Model Generation Test Vectors",
+  "description": "Test data for PR8 3D model generation and GLB export system",
+  "version": "1.0.0",
+  "testCases": [
+    {
+      "id": "test_case_1",
+      "description": "Simple electrical system GLB generation",
+      "input": {
+        "graph3d": {
+          "vehicleId": "hyundai_galloper_2000_test",
+          "metadata": {
+            "brand": "hyundai",
+            "model": "galloper",
+            "year": 2000,
+            "boundingBox": {
+              "min": [-2.5, -1.0, -0.5],
+              "max": [2.5, 1.0, 2.0]
+            },
+            "scale": 1.0,
+            "generated": "2024-01-15T10:30:00Z"
+          },
+          "nodes": [
+            {
+              "id": "battery_main",
+              "type": "battery",
+              "label": "Main Battery",
+              "position": [1.8, 0, 0.3],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "zone": "engine",
+              "circuits": ["circuit_power"],
+              "mesh": {
+                "geometry": "box",
+                "material": "plastic",
+                "color": "#FF4500",
+                "userData": {
+                  "voltage": "12V",
+                  "capacity": "70Ah"
+                }
+              }
+            },
+            {
+              "id": "fuse_main_60a",
+              "type": "fuse",
+              "label": "Main 60A Fuse",
+              "position": [1.6, 0.1, 0.35],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "zone": "engine",
+              "circuits": ["circuit_power"],
+              "mesh": {
+                "geometry": "cylinder",
+                "material": "plastic",
+                "color": "#FF6B6B",
+                "userData": {
+                  "rating": "60A"
+                }
+              }
+            },
+            {
+              "id": "headlight_left",
+              "type": "lamp",
+              "label": "Left Headlight",
+              "position": [2.2, -0.6, 0.8],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "zone": "exterior",
+              "circuits": ["circuit_lighting"],
+              "mesh": {
+                "geometry": "sphere",
+                "material": "glass",
+                "color": "#F0E68C",
+                "userData": {
+                  "power": "55W"
+                }
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge_1",
+              "from": "battery_main",
+              "to": "fuse_main_60a",
+              "type": "power",
+              "properties": {
+                "wireGauge": "6mm²",
+                "wireColor": "red"
+              }
+            },
+            {
+              "id": "edge_2",
+              "from": "fuse_main_60a",
+              "to": "headlight_left",
+              "type": "power",
+              "properties": {
+                "wireGauge": "2.5mm²",
+                "wireColor": "white"
+              }
+            }
+          ],
+          "routes": [
+            {
+              "edgeId": "edge_1",
+              "path": [
+                [1.8, 0, 0.3],
+                [1.7, 0.05, 0.325],
+                [1.6, 0.1, 0.35]
+              ],
+              "style": {
+                "color": "#FF0000",
+                "radius": 0.002,
+                "segments": 8,
+                "material": "copper"
+              }
+            },
+            {
+              "edgeId": "edge_2",
+              "path": [
+                [1.6, 0.1, 0.35],
+                [1.9, -0.2, 0.6],
+                [2.2, -0.6, 0.8]
+              ],
+              "style": {
+                "color": "#FFFFFF",
+                "radius": 0.001,
+                "segments": 8,
+                "material": "copper"
+              }
+            }
+          ],
+          "circuits": [
+            {
+              "id": "circuit_power",
+              "label": "Power Distribution",
+              "nodes": ["battery_main", "fuse_main_60a"],
+              "color": "#FF0000",
+              "group": "Circuit:circuit_power"
+            },
+            {
+              "id": "circuit_lighting",
+              "label": "Lighting System",
+              "nodes": ["fuse_main_60a", "headlight_left"],
+              "color": "#FFFF00",
+              "group": "Circuit:circuit_lighting"
+            }
+          ]
+        },
+        "manifest": {
+          "title": "Test Electrical System",
+          "description": "Simple test case for 3D model generation"
+        },
+        "jobId": "test_job_001",
+        "options": {
+          "showInsulation": true,
+          "showConnectors": false,
+          "optimizeGeometry": true
+        }
+      },
+      "expectedOutput": {
+        "success": true,
+        "glbUrl": "output/test_job_001.glb",
+        "manifestUrl": "output/test_job_001_manifest.json",
+        "metadata": {
+          "meshCount": 5,
+          "circuitCount": 2,
+          "nodeCount": 3,
+          "routeCount": 2,
+          "fileSize": "> 0"
+        },
+        "manifest": {
+          "version": "1.0.0",
+          "type": "electrical_system_3d",
+          "scene": {
+            "boundingBox": "defined",
+            "lighting": "configured"
+          },
+          "interactive": {
+            "pickable_objects": 5,
+            "tooltips": "defined",
+            "actions": "configured"
+          }
+        }
+      }
+    },
+    {
+      "id": "test_case_2",
+      "description": "Complex electrical system with multiple circuits",
+      "input": {
+        "graph3d": {
+          "vehicleId": "ford_f150_2005_complex",
+          "metadata": {
+            "brand": "ford",
+            "model": "f150",
+            "year": 2005,
+            "boundingBox": {
+              "min": [-3.0, -1.2, -0.6],
+              "max": [3.0, 1.2, 2.2]
+            },
+            "scale": 1.0,
+            "generated": "2024-01-15T10:30:00Z"
+          },
+          "nodes": [
+            {
+              "id": "battery_main",
+              "type": "battery",
+              "label": "Main Battery",
+              "position": [2.0, 0, 0.3],
+              "zone": "engine",
+              "circuits": ["circuit_power"],
+              "mesh": { "geometry": "box", "material": "plastic", "color": "#FF4500" }
+            },
+            {
+              "id": "alternator",
+              "type": "actuator",
+              "label": "Alternator",
+              "position": [1.5, 0.3, 0.4],
+              "zone": "engine",
+              "circuits": ["circuit_charging"],
+              "mesh": { "geometry": "cylinder", "material": "metal", "color": "#C0C0C0" }
+            },
+            {
+              "id": "ecu_engine",
+              "type": "ecu",
+              "label": "Engine ECU",
+              "position": [0.5, 0, 0.8],
+              "zone": "dash",
+              "circuits": ["circuit_engine_mgmt"],
+              "mesh": { "geometry": "box", "material": "metal", "color": "#96CEB4" }
+            },
+            {
+              "id": "fuse_box_main",
+              "type": "connector",
+              "label": "Main Fuse Box",
+              "position": [1.8, 0.2, 0.5],
+              "zone": "engine",
+              "circuits": ["circuit_power", "circuit_lighting"],
+              "mesh": { "geometry": "box", "material": "plastic", "color": "#45B7D1" }
+            },
+            {
+              "id": "headlight_left",
+              "type": "lamp",
+              "label": "Left Headlight",
+              "position": [2.5, -0.8, 0.9],
+              "zone": "exterior",
+              "circuits": ["circuit_lighting"],
+              "mesh": { "geometry": "sphere", "material": "glass", "color": "#F0E68C" }
+            },
+            {
+              "id": "headlight_right",
+              "type": "lamp",
+              "label": "Right Headlight",
+              "position": [2.5, 0.8, 0.9],
+              "zone": "exterior",
+              "circuits": ["circuit_lighting"],
+              "mesh": { "geometry": "sphere", "material": "glass", "color": "#F0E68C" }
+            }
+          ],
+          "edges": [
+            { "id": "edge_1", "from": "battery_main", "to": "fuse_box_main", "type": "power" },
+            { "id": "edge_2", "from": "alternator", "to": "battery_main", "type": "power" },
+            { "id": "edge_3", "from": "fuse_box_main", "to": "ecu_engine", "type": "power" },
+            { "id": "edge_4", "from": "fuse_box_main", "to": "headlight_left", "type": "power" },
+            { "id": "edge_5", "from": "fuse_box_main", "to": "headlight_right", "type": "power" }
+          ],
+          "routes": [
+            {
+              "edgeId": "edge_1",
+              "path": [[2.0, 0, 0.3], [1.9, 0.1, 0.4], [1.8, 0.2, 0.5]],
+              "style": { "color": "#FF0000", "radius": 0.004, "material": "copper" }
+            },
+            {
+              "edgeId": "edge_2", 
+              "path": [[1.5, 0.3, 0.4], [1.75, 0.15, 0.35], [2.0, 0, 0.3]],
+              "style": { "color": "#FF0000", "radius": 0.004, "material": "copper" }
+            },
+            {
+              "edgeId": "edge_3",
+              "path": [[1.8, 0.2, 0.5], [1.15, 0.1, 0.65], [0.5, 0, 0.8]],
+              "style": { "color": "#0000FF", "radius": 0.002, "material": "copper" }
+            },
+            {
+              "edgeId": "edge_4",
+              "path": [[1.8, 0.2, 0.5], [2.15, -0.3, 0.7], [2.5, -0.8, 0.9]],
+              "style": { "color": "#FFFFFF", "radius": 0.002, "material": "copper" }
+            },
+            {
+              "edgeId": "edge_5",
+              "path": [[1.8, 0.2, 0.5], [2.15, 0.5, 0.7], [2.5, 0.8, 0.9]],
+              "style": { "color": "#FFFFFF", "radius": 0.002, "material": "copper" }
+            }
+          ],
+          "circuits": [
+            {
+              "id": "circuit_power",
+              "label": "Power Distribution",
+              "nodes": ["battery_main", "fuse_box_main"],
+              "color": "#FF0000"
+            },
+            {
+              "id": "circuit_charging",
+              "label": "Charging System",
+              "nodes": ["alternator", "battery_main"],
+              "color": "#00FF00"
+            },
+            {
+              "id": "circuit_engine_mgmt",
+              "label": "Engine Management",
+              "nodes": ["fuse_box_main", "ecu_engine"],
+              "color": "#0000FF"
+            },
+            {
+              "id": "circuit_lighting",
+              "label": "Lighting System",
+              "nodes": ["fuse_box_main", "headlight_left", "headlight_right"],
+              "color": "#FFFF00"
+            }
+          ]
+        },
+        "jobId": "test_job_002",
+        "options": {
+          "showInsulation": true,
+          "showConnectors": true,
+          "hierarchicalGroups": true
+        }
+      },
+      "expectedOutput": {
+        "success": true,
+        "metadata": {
+          "meshCount": 11,
+          "circuitCount": 4,
+          "nodeCount": 6,
+          "routeCount": 5
+        },
+        "manifest": {
+          "interactive": {
+            "pickable_objects": 11,
+            "view_modes": 3
+          },
+          "performance": {
+            "complexity": "moderate"
+          }
+        }
+      }
+    },
+    {
+      "id": "test_case_3",
+      "description": "Performance test with dense component layout",
+      "input": {
+        "graph3d": {
+          "vehicleId": "performance_test_dense",
+          "metadata": {
+            "brand": "test",
+            "model": "performance",
+            "year": 2024,
+            "boundingBox": {
+              "min": [-2.5, -1.0, -0.5],
+              "max": [2.5, 1.0, 2.0]
+            },
+            "scale": 1.0,
+            "generated": "2024-01-15T10:30:00Z"
+          },
+          "nodes": [
+            { "id": "relay_1", "type": "relay", "label": "Relay 1", "position": [1.7, -0.1, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_2", "type": "relay", "label": "Relay 2", "position": [1.7, 0.0, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_3", "type": "relay", "label": "Relay 3", "position": [1.7, 0.1, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_4", "type": "relay", "label": "Relay 4", "position": [1.8, -0.1, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_5", "type": "relay", "label": "Relay 5", "position": [1.8, 0.0, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_6", "type": "relay", "label": "Relay 6", "position": [1.8, 0.1, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_7", "type": "relay", "label": "Relay 7", "position": [1.9, -0.1, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }},
+            { "id": "relay_8", "type": "relay", "label": "Relay 8", "position": [1.9, 0.0, 0.3], "zone": "engine", "circuits": ["circuit_relays"], "mesh": { "geometry": "box", "material": "plastic", "color": "#4ECDC4" }}
+          ],
+          "edges": [
+            { "id": "edge_1", "from": "relay_1", "to": "relay_2", "type": "signal" },
+            { "id": "edge_2", "from": "relay_2", "to": "relay_3", "type": "signal" },
+            { "id": "edge_3", "from": "relay_3", "to": "relay_4", "type": "signal" },
+            { "id": "edge_4", "from": "relay_4", "to": "relay_5", "type": "signal" },
+            { "id": "edge_5", "from": "relay_5", "to": "relay_6", "type": "signal" },
+            { "id": "edge_6", "from": "relay_6", "to": "relay_7", "type": "signal" },
+            { "id": "edge_7", "from": "relay_7", "to": "relay_8", "type": "signal" }
+          ],
+          "routes": [
+            { "edgeId": "edge_1", "path": [[1.7, -0.1, 0.3], [1.7, 0.0, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_2", "path": [[1.7, 0.0, 0.3], [1.7, 0.1, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_3", "path": [[1.7, 0.1, 0.3], [1.8, -0.1, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_4", "path": [[1.8, -0.1, 0.3], [1.8, 0.0, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_5", "path": [[1.8, 0.0, 0.3], [1.8, 0.1, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_6", "path": [[1.8, 0.1, 0.3], [1.9, -0.1, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }},
+            { "edgeId": "edge_7", "path": [[1.9, -0.1, 0.3], [1.9, 0.0, 0.3]], "style": { "color": "#0000FF", "radius": 0.001 }}
+          ],
+          "circuits": [
+            {
+              "id": "circuit_relays",
+              "label": "Relay Control Chain",
+              "nodes": ["relay_1", "relay_2", "relay_3", "relay_4", "relay_5", "relay_6", "relay_7", "relay_8"],
+              "color": "#4ECDC4"
+            }
+          ]
+        },
+        "jobId": "test_job_003",
+        "options": {
+          "optimizeGeometry": true,
+          "mergeInstances": true,
+          "LOD": true
+        }
+      },
+      "expectedOutput": {
+        "success": true,
+        "metadata": {
+          "meshCount": 15,
+          "circuitCount": 1,
+          "nodeCount": 8,
+          "routeCount": 7,
+          "processingTime": "< 5000"
+        },
+        "manifest": {
+          "performance": {
+            "complexity": "moderate",
+            "optimization": "applied"
+          }
+        }
+      }
+    }
+  ],
+  "acceptanceCriteria": [
+    "GLB files generated successfully for all test cases",
+    "All component geometries created with correct types",
+    "Wire meshes generated from polyline routes",
+    "Circuit grouping maintained in Three.js hierarchy",
+    "Pickable meshes have proper userData for interactivity",
+    "Viewer manifests contain complete metadata",
+    "File sizes reasonable for web delivery",
+    "Processing time under performance thresholds",
+    "Materials and textures applied correctly",
+    "Bounding boxes calculated accurately"
+  ]
+}

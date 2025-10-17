@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Pajero Pinin V60 Electrical System - 3D Viewer</title>
+    <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Fallback OrbitControls implementation -->
+    <script>
+        // Wait for THREE to load, then check for OrbitControls
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('Checking THREE.js and OrbitControls...');
+            console.log('THREE available:', typeof THREE !== 'undefined');
+            console.log('OrbitControls available:', typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined');
+        });
+        
+        // Fallback OrbitControls if CDN fails
+        setTimeout(function() {
+            if (typeof THREE !== 'undefined' && !THREE.OrbitControls) {
+            console.log('Loading fallback OrbitControls...');
+            // Simple orbit controls implementation
+            THREE.OrbitControls = function(camera, domElement) {
+                this.camera = camera;
+                this.domElement = domElement;
+                this.target = new THREE.Vector3(0, 0, 0);
+                this.enableDamping = true;
+                this.dampingFactor = 0.05;
+                this.enableZoom = true;
+                this.enableRotate = true;
+                this.enablePan = true;
+                
+                // Internal state
+                this.isMouseDown = false;
+                this.mouseButtons = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
+                this.rotateSpeed = 1.0;
+                this.zoomSpeed = 1.0;
+                this.panSpeed = 1.0;
+                
+                // Spherical coordinates
+                this.spherical = new THREE.Spherical();
+                this.sphericalDelta = new THREE.Spherical();
+                this.scale = 1;
+                this.panOffset = new THREE.Vector3();
+                this.zoomChanged = false;
+                
+                this.lastMousePosition = new THREE.Vector2();
+                this.mouse = new THREE.Vector2();
+                
+                // Set initial spherical coordinates
+                const offset = new THREE.Vector3();
+                offset.copy(this.camera.position).sub(this.target);
+                this.spherical.setFromVector3(offset);
+                
+                this.setupEventListeners();
+            };
+            
+            THREE.OrbitControls.prototype = {
+                setupEventListeners: function() {
+                    const scope = this;
+                    
+                    // Use both canvas and document listeners for reliability
+                    this.domElement.addEventListener('mousedown', function(event) {
+                        console.log('Canvas mousedown:', event.button);
+                        scope.onMouseDown(event);
+                    }, false);
+                    
+                    document.addEventListener('mousemove', function(event) {
+                        scope.onMouseMove(event);
+                    }, false);
+                    
+                    document.addEventListener('mouseup', function(event) {
+                        scope.onMouseUp(event);
+                    }, false);
+                    
+                    this.domElement.addEventListener('wheel', function(event) {
+                        scope.onMouseWheel(event);
+                    }, false);
+                    
+                    this.domElement.addEventListener('contextmenu', function(event) {
+                        event.preventDefault();
+                    }, false);
+                    
+                    // Touch events for mobile
+                    this.domElement.addEventListener('touchstart', function(event) {
+                        if (event.touches.length === 1) {
+                            scope.onMouseDown({
+                                clientX: event.touches[0].clientX,
+                                clientY: event.touches[0].clientY,
+                                button: 0,
+                                preventDefault: () => event.preventDefault()
+                            });
+                        }
+                    }, false);
+                    
+                    this.domElement.addEventListener('touchmove', function(event) {
+                        if (event.touches.length === 1) {
+                            scope.onMouseMove({
+                                clientX: event.touches[0].clientX,
+                                clientY: event.touches[0].clientY,
+                                preventDefault: () => event.preventDefault()
+                            });
+                        }
+                    }, false);
+                    
+                    this.domElement.addEventListener('touchend', function(event) {
+                        scope.onMouseUp(event);
+                    }, false);
+                },
+                
+                onMouseDown: function(event) {
+                    this.isMouseDown = true;
+                    this.mouseButton = event.button;
+                    this.lastMousePosition.set(event.clientX, event.clientY);
+                    event.preventDefault();
+                },
+                
+                onMouseMove: function(event) {
+                    if (!this.isMouseDown) return;
+                    
+                    this.mouse.set(event.clientX, event.clientY);
+                    const deltaX = this.mouse.x - this.lastMousePosition.x;
+                    const deltaY = this.mouse.y - this.lastMousePosition.y;
+                    
+                    if (this.mouseButton === this.mouseButtons.LEFT || this.mouseButton === undefined) {
+                        // Rotate (default behavior)
+                        this.rotateLeft(2 * Math.PI * deltaX / this.domElement.clientHeight * this.rotateSpeed);
+                        this.rotateUp(2 * Math.PI * deltaY / this.domElement.clientHeight * this.rotateSpeed);
+                    } else if (this.mouseButton === this.mouseButtons.RIGHT) {
+                        // Pan
+                        this.pan(deltaX, deltaY);
+                    }
+                    
+                    this.lastMousePosition.copy(this.mouse);
+                    event.preventDefault();
+                },
+                
+                onMouseUp: function(event) {
+                    this.isMouseDown = false;
+                },
+                
+                onMouseWheel: function(event) {
+                    if (event.deltaY < 0) {
+                        this.dollyIn(this.getZoomScale());
+                    } else if (event.deltaY > 0) {
+                        this.dollyOut(this.getZoomScale());
+                    }
+                    this.update();
+                    event.preventDefault();
+                },
+                
+                rotateLeft: function(angle) {
+                    this.sphericalDelta.theta -= angle;
+                },
+                
+                rotateUp: function(angle) {
+                    this.sphericalDelta.phi -= angle;
+                },
+                
+                pan: function(deltaX, deltaY) {
+                    const offset = new THREE.Vector3();
+                    offset.copy(this.camera.position).sub(this.target);
+                    let targetDistance = offset.length();
+                    
+                    targetDistance *= Math.tan((this.camera.fov / 2) * Math.PI / 180.0);
+                    
+                    const panLeft = new THREE.Vector3();
+                    panLeft.setFromMatrixColumn(this.camera.matrix, 0);
+                    panLeft.multiplyScalar(-2 * deltaX * targetDistance / this.domElement.clientHeight);
+                    
+                    const panUp = new THREE.Vector3();
+                    panUp.setFromMatrixColumn(this.camera.matrix, 1);
+                    panUp.multiplyScalar(2 * deltaY * targetDistance / this.domElement.clientHeight);
+                    
+                    this.panOffset.add(panLeft).add(panUp);
+                },
+                
+                dollyIn: function(dollyScale) {
+                    this.scale /= dollyScale;
+                },
+                
+                dollyOut: function(dollyScale) {
+                    this.scale *= dollyScale;
+                },
+                
+                getZoomScale: function() {
+                    return Math.pow(0.95, this.zoomSpeed);
+                },
+                
+                update: function() {
+                    const offset = new THREE.Vector3();
+                    const quat = new THREE.Quaternion().setFromUnitVectors(this.camera.up, new THREE.Vector3(0, 1, 0));
+                    const quatInverse = quat.clone().invert();
+                    
+                    offset.copy(this.camera.position).sub(this.target);
+                    offset.applyQuaternion(quat);
+                    
+                    this.spherical.setFromVector3(offset);
+                    
+                    if (this.enableDamping) {
+                        this.spherical.theta += this.sphericalDelta.theta * this.dampingFactor;
+                        this.spherical.phi += this.sphericalDelta.phi * this.dampingFactor;
+                        this.sphericalDelta.theta *= (1 - this.dampingFactor);
+                        this.sphericalDelta.phi *= (1 - this.dampingFactor);
+                    } else {
+                        this.spherical.theta += this.sphericalDelta.theta;
+                        this.spherical.phi += this.sphericalDelta.phi;
+                        this.sphericalDelta.set(0, 0, 0);
+                    }
+                    
+                    // Restrict phi to be between desired limits
+                    this.spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, this.spherical.phi));
+                    this.spherical.radius *= this.scale;
+                    this.spherical.radius = Math.max(0.1, Math.min(100, this.spherical.radius));
+                    
+                    // Move target to panned location
+                    this.target.add(this.panOffset);
+                    
+                    offset.setFromSpherical(this.spherical);
+                    offset.applyQuaternion(quatInverse);
+                    
+                    this.camera.position.copy(this.target).add(offset);
+                    this.camera.lookAt(this.target);
+                    
+                    if (this.enableDamping) {
+                        this.panOffset.multiplyScalar(1 - this.dampingFactor);
+                    } else {
+                        this.panOffset.set(0, 0, 0);
+                    }
+                    
+                    this.scale = 1;
+                    
+                    return false;
+                }
+            };
+            }
+        }, 100); // Check after 100ms to let CDN scripts load
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            font-family: 'Monaco', 'Menlo', monospace;
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #fff;
+            font-size: 12px;
+            max-width: 320px;
+            pointer-events: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel h3 {
+            margin: 0 0 10px 0;
+            color: #4fc3f7;
+            font-size: 14px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-value {
+            color: #81c784;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            background: #2196f3;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background: #1976d2;
+        }
+        
+        .btn.active {
+            background: #ff9800;
+        }
+        
+        .btn.danger {
+            background: #f44336;
+        }
+        
+        .zone-filter {
+            margin: 5px 0;
+        }
+        
+        .zone-filter input {
+            margin-right: 8px;
+        }
+        
+        .zone-filter label {
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4fc3f7;
+            font-size: 18px;
+            z-index: 200;
+        }
+        
+        .selection-info {
+            background: rgba(255, 152, 0, 0.9);
+            color: #000;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .coordinate-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+        
+        .harness-legend {
+            display: grid;
+            grid-template-columns: 20px 1fr;
+            gap: 5px;
+            align-items: center;
+            margin: 2px 0;
+        }
+        
+        .harness-color {
+            width: 16px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        #progress-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        #progress-fill {
+            height: 100%;
+            background: #4fc3f7;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Hover label styles */
+        .hover-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid #4fc3f7;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            max-width: 250px;
+            line-height: 1.4;
+        }
+        
+        .hover-label h4 {
+            margin: 0 0 4px 0;
+            color: #4fc3f7;
+            font-size: 13px;
+        }
+        
+        .hover-label .label-detail {
+            color: #ccc;
+            font-size: 11px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <div class="loading" id="loading">Loading Enhanced Electrical System...</div>
+        
+        <div id="ui-overlay">
+            <!-- Vehicle Information Panel -->
+            <div class="panel" id="vehicle-info">
+                <h3>🚗 Pajero Pinin V60 Electrical</h3>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span>Nodes:</span>
+                        <span class="stat-value" id="node-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Edges:</span>
+                        <span class="stat-value" id="edge-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Zones:</span>
+                        <span class="stat-value" id="zone-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Harnesses:</span>
+                        <span class="stat-value" id="harness-count">0</span>
+                    </div>
+                </div>
+                <div class="coordinate-display">
+                    Coordinate Frame: +X forward, +Y left, +Z up<br>
+                    Origin: Front axle centerline floor<br>
+                    Vehicle: 4.2m × 1.7m × 1.8m
+                </div>
+            </div>
+            
+            <!-- Enhanced Controls Panel -->
+            <div class="panel" id="controls-panel">
+                <h3>⚙️ Enhanced Controls</h3>
+                <div class="controls">
+                    <button class="btn active" id="show-components">Components</button>
+                    <button class="btn active" id="show-wires">Wires</button>
+                    <button class="btn active" id="show-harnesses">Harnesses</button>
+                    <button class="btn" id="show-zones">Zone Bounds</button>
+                    <button class="btn" id="show-labels">Labels</button>
+                    <button class="btn" id="realistic-view">Realistic View</button>
+                </div>
+                
+                <!-- Camera Controls -->
+                <h3>📷 Camera Controls</h3>
+                <div class="controls">
+                    <button class="btn" id="camera-overview">Overview</button>
+                    <button class="btn" id="camera-front">Front</button>
+                    <button class="btn" id="camera-side">Side</button>
+                    <button class="btn" id="camera-top">Top</button>
+                    <button class="btn" id="camera-engine">Engine Bay</button>
+                    <button class="btn" id="camera-dashboard">Dashboard</button>
+                </div>
+                <div class="coordinate-display">
+                    🖱️ <strong>Mouse:</strong> Left drag = Orbit, Right drag = Pan, Wheel = Zoom<br>
+                    ⌨️ <strong>Keyboard:</strong> WASD + QE (up/down), Shift = Fast, Ctrl = Slow<br>
+                    🔄 <strong>Reset:</strong> R key or Overview button
+                </div>
+                
+                <!-- Harness Legend -->
+                <h3>🛣️ Harness Routes</h3>
+                <div id="harness-legend">
+                    <!-- Dynamically populated -->
+                </div>
+                
+                <!-- Zone Filters -->
+                <h3>📍 Zone Filters</h3>
+                <div id="zone-filters">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            
+            <!-- Selection Info Panel -->
+            <div class="panel selection-info" id="selection-info" style="display: none;">
+                <h3>🔍 Selection Info</h3>
+                <div id="selection-details"></div>
+            </div>
+        </div>
+        
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+        
+        <!-- Hover label for component details -->
+        <div id="hover-label" class="hover-label" style="display: none;"></div>
+    </div>
+
+    <script>
+        class EnhancedElectricalViewer {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.graphModel = null;
+                this.sceneConfig = null;
+                
+                // Enhanced visualization data
+                this.componentMeshes = {};
+                this.wireMeshes = {};
+                this.harnessMeshes = {};
+                this.zoneMeshes = {};
+                this.labelMeshes = {};
+                
+                // State management
+                this.visibleZones = new Set();
+                this.selectedObject = null;
+                this.showComponents = true;
+                this.showWires = true;
+                this.showHarnesses = true;
+                this.showZones = false;
+                this.showLabels = false;
+                this.realisticView = false;
+                
+                // Camera movement state
+                this.keyState = {};
+                this.cameraSpeed = 0.1;
+                this.fastSpeedMultiplier = 3.0;
+                this.slowSpeedMultiplier = 0.3;
+                
+                // Hover state
+                this.hoveredObject = null;
+                this.hoverLabel = document.getElementById('hover-label');
+                
+                // Enhanced materials
+                this.materials = {
+                    component: {
+                        default: new THREE.MeshLambertMaterial({ color: 0x4fc3f7, opacity: 0.8, transparent: true }),
+                        fuse: new THREE.MeshLambertMaterial({ color: 0xff9800, opacity: 0.8, transparent: true }),
+                        relay: new THREE.MeshLambertMaterial({ color: 0x4caf50, opacity: 0.8, transparent: true }),
+                        bus: new THREE.MeshLambertMaterial({ color: 0xe91e63, opacity: 0.8, transparent: true }),
+                        ground: new THREE.MeshLambertMaterial({ color: 0x424242, opacity: 0.8, transparent: true }),
+                        connector: new THREE.MeshLambertMaterial({ color: 0x9c27b0, opacity: 0.8, transparent: true }),
+                        selected: new THREE.MeshLambertMaterial({ color: 0xffeb3b, opacity: 1.0, transparent: false })
+                    },
+                    wire: {
+                        default: new THREE.MeshBasicMaterial({ color: 0x666666, opacity: 0.7, transparent: true }),
+                        selected: new THREE.MeshBasicMaterial({ color: 0xffeb3b, opacity: 1.0, transparent: false })
+                    },
+                    harness: {
+                        engine: new THREE.MeshLambertMaterial({ color: 0xff5722, opacity: 0.6, transparent: true }),
+                        dash: new THREE.MeshLambertMaterial({ color: 0x2196f3, opacity: 0.6, transparent: true }),
+                        floor: new THREE.MeshLambertMaterial({ color: 0x4caf50, opacity: 0.6, transparent: true }),
+                        door_left: new THREE.MeshLambertMaterial({ color: 0x9c27b0, opacity: 0.6, transparent: true }),
+                        door_right: new THREE.MeshLambertMaterial({ color: 0xff9800, opacity: 0.6, transparent: true }),
+                        tailgate: new THREE.MeshLambertMaterial({ color: 0x607d8b, opacity: 0.6, transparent: true })
+                    },
+                    zone: new THREE.MeshBasicMaterial({ 
+                        color: 0x00ff00, 
+                        opacity: 0.1, 
+                        transparent: true,
+                        wireframe: true 
+                    })
+                };
+                
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                
+                this.init();
+            }
+            
+            createReliableOrbitControls(camera, domElement) {
+                // Reliable orbit controls implementation
+                const controls = {
+                    camera: camera,
+                    domElement: domElement,
+                    target: new THREE.Vector3(0, 0, 0),
+                    
+                    spherical: new THREE.Spherical(),
+                    sphericalDelta: new THREE.Spherical(),
+                    scale: 1,
+                    panOffset: new THREE.Vector3(),
+                    
+                    rotateSpeed: 0.5,
+                    zoomSpeed: 1.0,
+                    panSpeed: 1.0,
+                    
+                    isMouseDown: false,
+                    mouseButton: -1,
+                    lastMousePosition: new THREE.Vector2(),
+                    
+                    // Initialize
+                    init: function() {
+                        const offset = new THREE.Vector3();
+                        offset.copy(this.camera.position).sub(this.target);
+                        this.spherical.setFromVector3(offset);
+                        this.setupEventListeners();
+                    },
+                    
+                    setupEventListeners: function() {
+                        const scope = this;
+                        
+                        this.domElement.addEventListener('mousedown', function(event) {
+                            console.log('Mouse down - button:', event.button);
+                            scope.isMouseDown = true;
+                            scope.mouseButton = event.button;
+                            scope.lastMousePosition.set(event.clientX, event.clientY);
+                            event.preventDefault();
+                        });
+                        
+                        // Use document for mousemove to capture movement even outside canvas
+                        document.addEventListener('mousemove', function(event) {
+                            if (!scope.isMouseDown) return;
+                            
+                            const deltaX = event.clientX - scope.lastMousePosition.x;
+                            const deltaY = event.clientY - scope.lastMousePosition.y;
+                            
+                            console.log('Mouse move - deltaX:', deltaX, 'deltaY:', deltaY, 'button:', scope.mouseButton);
+                            
+                            if (scope.mouseButton === 0) { // Left button - rotate
+                                scope.sphericalDelta.theta -= 2 * Math.PI * deltaX / scope.domElement.clientWidth * scope.rotateSpeed;
+                                scope.sphericalDelta.phi -= 2 * Math.PI * deltaY / scope.domElement.clientHeight * scope.rotateSpeed;
+                                console.log('Rotating - theta delta:', scope.sphericalDelta.theta, 'phi delta:', scope.sphericalDelta.phi);
+                            } else if (scope.mouseButton === 2) { // Right button - pan
+                                scope.pan(deltaX, deltaY);
+                            }
+                            
+                            scope.lastMousePosition.set(event.clientX, event.clientY);
+                            event.preventDefault();
+                        });
+                        
+                        document.addEventListener('mouseup', function(event) {
+                            console.log('Mouse up');
+                            scope.isMouseDown = false;
+                            scope.mouseButton = -1;
+                        });
+                        
+                        this.domElement.addEventListener('wheel', (event) => {
+                            if (event.deltaY < 0) {
+                                this.scale /= 1.1;
+                            } else {
+                                this.scale *= 1.1;
+                            }
+                            event.preventDefault();
+                        });
+                        
+                        this.domElement.addEventListener('contextmenu', (event) => {
+                            event.preventDefault();
+                        });
+                    },
+                    
+                    pan: function(deltaX, deltaY) {
+                        const offset = new THREE.Vector3();
+                        offset.copy(this.camera.position).sub(this.target);
+                        const targetDistance = offset.length();
+                        
+                        const fov = this.camera.fov * Math.PI / 180;
+                        const panDistance = 2 * targetDistance * Math.tan(fov / 2);
+                        
+                        const panLeft = new THREE.Vector3();
+                        panLeft.setFromMatrixColumn(this.camera.matrix, 0);
+                        panLeft.multiplyScalar(-deltaX * panDistance / this.domElement.clientHeight);
+                        
+                        const panUp = new THREE.Vector3();
+                        panUp.setFromMatrixColumn(this.camera.matrix, 1);
+                        panUp.multiplyScalar(deltaY * panDistance / this.domElement.clientHeight);
+                        
+                        this.panOffset.add(panLeft).add(panUp);
+                    },
+                    
+                    update: function() {
+                        const offset = new THREE.Vector3();
+                        offset.copy(this.camera.position).sub(this.target);
+                        
+                        this.spherical.setFromVector3(offset);
+                        this.spherical.theta += this.sphericalDelta.theta;
+                        this.spherical.phi += this.sphericalDelta.phi;
+                        
+                        // Constrain phi
+                        this.spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, this.spherical.phi));
+                        this.spherical.radius *= this.scale;
+                        this.spherical.radius = Math.max(0.5, Math.min(50, this.spherical.radius));
+                        
+                        // Apply pan offset
+                        this.target.add(this.panOffset);
+                        
+                        // Update camera position
+                        offset.setFromSpherical(this.spherical);
+                        this.camera.position.copy(this.target).add(offset);
+                        this.camera.lookAt(this.target);
+                        
+                        // Damping
+                        this.sphericalDelta.theta *= 0.95;
+                        this.sphericalDelta.phi *= 0.95;
+                        this.panOffset.multiplyScalar(0.95);
+                        this.scale = 1;
+                    }
+                };
+                
+                controls.init();
+                return controls;
+            }
+            
+            async init() {
+                try {
+                    this.setupScene();
+                    this.setupEventListeners();
+                    
+                    // Load enhanced data
+                    await this.loadEnhancedData();
+                    
+                    // Build enhanced visualization
+                    this.buildEnhancedVisualization();
+                    
+                    this.updateProgress(100);
+                    this.hideLoading();
+                    
+                    console.log('🎉 Enhanced Electrical System Viewer initialized successfully');
+                } catch (error) {
+                    console.error('❌ Failed to initialize viewer:', error);
+                    document.getElementById('loading').textContent = 'Failed to load: ' + error.message;
+                }
+            }
+            
+            setupScene() {
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1a1a1a);
+                
+                // Camera setup - positioned to view entire vehicle
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(3, -2, 2);
+                this.camera.lookAt(0, 0, 0.5);
+                
+                // Renderer setup
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+                
+                // Enhanced lighting for realistic appearance
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambientLight);
+                
+                // Main directional light (sun)
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 10);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                this.scene.add(directionalLight);
+                
+                // Secondary light for fill
+                const fillLight = new THREE.DirectionalLight(0x4fc3f7, 0.3);
+                fillLight.position.set(-5, -5, 5);
+                this.scene.add(fillLight);
+                
+                // Initialize reliable camera controls
+                console.log('Setting up enhanced camera controls...');
+                this.controls = this.createReliableOrbitControls(this.camera, this.renderer.domElement);
+                this.controls.target.set(0, 0, 0.5);
+                console.log('Enhanced camera controls initialized successfully');
+                
+                // Vehicle reference frame
+                this.addVehicleFrame();
+                
+                // Start render loop
+                this.animate();
+            }
+            
+            addVehicleFrame() {
+                // Vehicle outline (Pajero Pinin dimensions)
+                const vehicleGeometry = new THREE.BoxGeometry(4.2, 1.7, 1.8);
+                const vehicleEdges = new THREE.EdgesGeometry(vehicleGeometry);
+                const vehicleFrame = new THREE.LineSegments(vehicleEdges, new THREE.LineBasicMaterial({ 
+                    color: 0x333333,
+                    opacity: 0.3,
+                    transparent: true
+                }));
+                vehicleFrame.position.set(0, 0, 0.9); // Center at half height
+                this.scene.add(vehicleFrame);
+                
+                
+                // Remove coordinate axes as requested
+                // const axesHelper = new THREE.AxesHelper(1);
+                // this.scene.add(axesHelper);
+            }
+            
+            async loadEnhancedData() {
+                this.updateProgress(20);
+                
+                try {
+                    // Load enhanced NDJSON data
+                    const response = await fetch('./graph/enhanced_model.ndjson');
+                    if (!response.ok) {
+                        throw new Error(`Failed to load enhanced NDJSON: ${response.status}`);
+                    }
+                    
+                    const ndjsonText = await response.text();
+                    this.graphModel = this.parseEnhancedNDJSON(ndjsonText);
+                    
+                    this.updateProgress(60);
+                    
+                    // Load enhanced scene configuration
+                    const configResponse = await fetch('./scene/enhanced_scene.config.json');
+                    if (configResponse.ok) {
+                        this.sceneConfig = await configResponse.json();
+                    }
+                    
+                    this.updateProgress(80);
+                    
+                    console.log('📊 Enhanced data loaded:', {
+                        nodes: Object.keys(this.graphModel.nodesById).length,
+                        edges: this.graphModel.edges.length,
+                        zones: Object.keys(this.graphModel.byZone).length,
+                        harnesses: Object.keys(this.sceneConfig?.harnesses || {}).length
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Failed to load enhanced data:', error);
+                    throw error;
+                }
+            }
+            
+            parseEnhancedNDJSON(ndjsonText) {
+                const lines = ndjsonText.trim().split('\n');
+                const nodesById = {};
+                const edges = [];
+                const byZone = {};
+                const byType = {};
+                let metadata = null;
+                
+                for (const line of lines) {
+                    const record = JSON.parse(line);
+                    
+                    if (record.kind === 'meta') {
+                        metadata = record;
+                    } else if (record.kind === 'node') {
+                        nodesById[record.id] = record;
+                        
+                        // Index by zone
+                        if (record.anchor_zone) {
+                            if (!byZone[record.anchor_zone]) byZone[record.anchor_zone] = [];
+                            byZone[record.anchor_zone].push(record.id);
+                        }
+                        
+                        // Index by type
+                        if (!byType[record.node_type]) byType[record.node_type] = [];
+                        byType[record.node_type].push(record.id);
+                        
+                    } else if (record.kind === 'edge') {
+                        edges.push(record);
+                    }
+                }
+                
+                return { nodesById, edges, byZone, byType, metadata };
+            }
+            
+            buildEnhancedVisualization() {
+                console.log('🏗️ Building enhanced 3D visualization...');
+                
+                // Clear existing meshes
+                this.clearVisualization();
+                
+                // Build components with realistic positioning
+                this.buildEnhancedComponents();
+                
+                // Build harness routes
+                this.buildHarnessRoutes();
+                
+                // Build wire connections
+                this.buildWireConnections();
+                
+                // Build zone boundaries
+                this.buildZoneBoundaries();
+                
+                // Create zone labels for the vehicle frame (disabled)
+                // this.createZoneLabels();
+                
+                // Update UI
+                this.updateStatistics();
+                this.setupFilters();
+                this.setupHarnessLegend();
+                
+                console.log('✅ Enhanced visualization complete');
+            }
+            
+            buildEnhancedComponents() {
+                const componentGroup = new THREE.Group();
+                componentGroup.name = 'components';
+                
+                for (const [nodeId, node] of Object.entries(this.graphModel.nodesById)) {
+                    if (!node.anchor_xyz) continue;
+                    
+                    const [x, y, z] = node.anchor_xyz;
+                    const bbox = node.bbox_m || [0.05, 0.05, 0.025];
+                    
+                    let geometry, material;
+                    
+                    // Enhanced geometry based on component type
+                    switch (node.node_type) {
+                        case 'component':
+                            geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
+                            material = this.materials.component.default;
+                            break;
+                            
+                        case 'fuse':
+                            geometry = new THREE.CylinderGeometry(bbox[0]/2, bbox[0]/2, bbox[2], 8);
+                            material = this.materials.component.fuse;
+                            break;
+                            
+                        case 'relay':
+                            geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
+                            material = this.materials.component.relay;
+                            break;
+                            
+                        case 'bus':
+                            geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
+                            material = this.materials.component.bus;
+                            break;
+                            
+                        case 'ground_point':
+                            geometry = new THREE.SphereGeometry(bbox[0]/2, 8, 6);
+                            material = this.materials.component.ground;
+                            break;
+                            
+                        case 'connector':
+                            geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
+                            material = this.materials.component.connector;
+                            break;
+                            
+                        default:
+                            geometry = new THREE.BoxGeometry(bbox[0], bbox[1], bbox[2]);
+                            material = this.materials.component.default;
+                    }
+                    
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(x, y, z);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.userData = { nodeId, node, type: 'component' };
+                    
+                    componentGroup.add(mesh);
+                    this.componentMeshes[nodeId] = mesh;
+                }
+                
+                this.scene.add(componentGroup);
+            }
+            
+            buildHarnessRoutes() {
+                if (!this.sceneConfig?.harnesses) return;
+                
+                const harnessGroup = new THREE.Group();
+                harnessGroup.name = 'harnesses';
+                
+                for (const [harnessId, harnessData] of Object.entries(this.sceneConfig.harnesses)) {
+                    const path = harnessData.path;
+                    const thickness = harnessData.thickness || 0.02;
+                    
+                    if (path && path.length > 1) {
+                        // Create tube geometry for harness
+                        const curve = new THREE.CatmullRomCurve3(
+                            path.map(point => new THREE.Vector3(point[0], point[1], point[2]))
+                        );
+                        
+                        const tubeGeometry = new THREE.TubeGeometry(curve, 64, thickness/2, 8, false);
+                        
+                        // Select material based on harness type
+                        let material = this.materials.harness.engine; // default
+                        if (harnessId.includes('dash')) material = this.materials.harness.dash;
+                        else if (harnessId.includes('floor')) material = this.materials.harness.floor;
+                        else if (harnessId.includes('Ldoor')) material = this.materials.harness.door_left;
+                        else if (harnessId.includes('Rdoor')) material = this.materials.harness.door_right;
+                        else if (harnessId.includes('tailgate')) material = this.materials.harness.tailgate;
+                        
+                        const harnessMesh = new THREE.Mesh(tubeGeometry, material);
+                        harnessMesh.userData = { harnessId, harnessData, type: 'harness' };
+                        harnessMesh.castShadow = true;
+                        
+                        harnessGroup.add(harnessMesh);
+                        this.harnessMeshes[harnessId] = harnessMesh;
+                    }
+                }
+                
+                this.scene.add(harnessGroup);
+            }
+            
+            buildWireConnections() {
+                const wireGroup = new THREE.Group();
+                wireGroup.name = 'wires';
+                
+                for (const edge of this.graphModel.edges) {
+                    const sourceNode = this.graphModel.nodesById[edge.source];
+                    const targetNode = this.graphModel.nodesById[edge.target];
+                    
+                    if (sourceNode?.anchor_xyz && targetNode?.anchor_xyz) {
+                        const sourcePos = new THREE.Vector3(...sourceNode.anchor_xyz);
+                        const targetPos = new THREE.Vector3(...targetNode.anchor_xyz);
+                        
+                        // Find the best harness route for this wire connection
+                        const wireRoute = this.findBestHarnessRoute(sourceNode, targetNode);
+                        
+                        if (wireRoute && wireRoute.length > 0) {
+                            // Create wire that follows the harness route
+                            const wirePoints = this.createWireAlongRoute(sourcePos, targetPos, wireRoute);
+                            const wireGeometry = new THREE.BufferGeometry().setFromPoints(wirePoints);
+                            
+                            // Color wire based on node color or type
+                            let wireColor = 0x666666;
+                            if (sourceNode.color) {
+                                wireColor = this.parseWireColor(sourceNode.color);
+                            }
+                            
+                            const wireMaterial = new THREE.LineBasicMaterial({ 
+                                color: wireColor,
+                                opacity: 0.8,
+                                transparent: true,
+                                linewidth: 2
+                            });
+                            
+                            const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
+                            wireMesh.userData = { edge, sourceNode, targetNode, type: 'wire', route: wireRoute };
+                            
+                            wireGroup.add(wireMesh);
+                            this.wireMeshes[`${edge.source}_${edge.target}`] = wireMesh;
+                        } else {
+                            // Fallback to direct connection if no harness route found
+                            const midPoint = sourcePos.clone().lerp(targetPos, 0.5);
+                            midPoint.z += 0.05; // Minimal curve
+                            
+                            const curve = new THREE.QuadraticBezierCurve3(sourcePos, midPoint, targetPos);
+                            const points = curve.getPoints(20);
+                            const wireGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                            
+                            let wireColor = 0x666666;
+                            if (sourceNode.color) {
+                                wireColor = this.parseWireColor(sourceNode.color);
+                            }
+                            
+                            const wireMaterial = new THREE.LineBasicMaterial({ 
+                                color: wireColor,
+                                opacity: 0.6,
+                                transparent: true,
+                                linewidth: 1
+                            });
+                            
+                            const wireMesh = new THREE.Line(wireGeometry, wireMaterial);
+                            wireMesh.userData = { edge, sourceNode, targetNode, type: 'wire' };
+                            
+                            wireGroup.add(wireMesh);
+                            this.wireMeshes[`${edge.source}_${edge.target}`] = wireMesh;
+                        }
+                    }
+                }
+                
+                this.scene.add(wireGroup);
+                console.log(`🔌 Created ${Object.keys(this.wireMeshes).length} wire connections with harness routing`);
+            }
+            
+            findBestHarnessRoute(sourceNode, targetNode) {
+                if (!this.sceneConfig?.harnesses) return null;
+                
+                const sourceZone = sourceNode.anchor_zone;
+                const targetZone = targetNode.anchor_zone;
+                
+                // Define zone-to-harness mapping
+                const zoneHarnessMap = {
+                    'Engine Compartment': 'harness_engine',
+                    'Dash Panel': 'harness_dash', 
+                    'Floor & Roof': 'harness_floor',
+                    'Left Front Door': 'harness_Ldoor',
+                    'Right Front Door': 'harness_Rdoor',
+                    'Rear Cargo/Tailgate': 'harness_tailgate'
+                };
+                
+                // Find harness routes that connect the zones
+                const sourceHarness = zoneHarnessMap[sourceZone];
+                const targetHarness = zoneHarnessMap[targetZone];
+                
+                if (sourceHarness && targetHarness) {
+                    if (sourceHarness === targetHarness) {
+                        // Same harness - use that harness route
+                        return this.sceneConfig.harnesses[sourceHarness]?.path || null;
+                    } else {
+                        // Different harnesses - need to connect through main routes
+                        return this.findMultiHarnessRoute(sourceHarness, targetHarness);
+                    }
+                } else if (sourceHarness) {
+                    // Only source has harness - use partial route
+                    return this.sceneConfig.harnesses[sourceHarness]?.path || null;
+                } else if (targetHarness) {
+                    // Only target has harness - use partial route
+                    return this.sceneConfig.harnesses[targetHarness]?.path || null;
+                }
+                
+                return null;
+            }
+            
+            findMultiHarnessRoute(sourceHarnessId, targetHarnessId) {
+                // Define common harness connection points (typically through dashboard)
+                const harnessPaths = this.sceneConfig.harnesses;
+                
+                const sourcePath = harnessPaths[sourceHarnessId]?.path;
+                const targetPath = harnessPaths[targetHarnessId]?.path;
+                
+                if (!sourcePath || !targetPath) return null;
+                
+                // For multi-harness routing, connect through the dashboard harness
+                const dashPath = harnessPaths['harness_dash']?.path;
+                
+                if (sourceHarnessId === 'harness_dash') {
+                    return sourcePath;
+                } else if (targetHarnessId === 'harness_dash') {
+                    return targetPath;
+                } else if (dashPath) {
+                    // Route through dashboard: source -> dash -> target
+                    const combinedPath = [
+                        ...sourcePath,
+                        ...dashPath,
+                        ...targetPath
+                    ];
+                    return combinedPath;
+                }
+                
+                // Fallback: use source harness path
+                return sourcePath;
+            }
+            
+            createWireAlongRoute(sourcePos, targetPos, harnessRoute) {
+                if (!harnessRoute || harnessRoute.length === 0) return [sourcePos, targetPos];
+                
+                const wirePoints = [];
+                
+                // Start at source position
+                wirePoints.push(sourcePos.clone());
+                
+                // Find the closest harness point to source
+                let closestSourceIndex = 0;
+                let closestSourceDistance = Infinity;
+                
+                for (let i = 0; i < harnessRoute.length; i++) {
+                    const harnessPoint = new THREE.Vector3(...harnessRoute[i]);
+                    const distance = sourcePos.distanceTo(harnessPoint);
+                    if (distance < closestSourceDistance) {
+                        closestSourceDistance = distance;
+                        closestSourceIndex = i;
+                    }
+                }
+                
+                // Find the closest harness point to target
+                let closestTargetIndex = harnessRoute.length - 1;
+                let closestTargetDistance = Infinity;
+                
+                for (let i = 0; i < harnessRoute.length; i++) {
+                    const harnessPoint = new THREE.Vector3(...harnessRoute[i]);
+                    const distance = targetPos.distanceTo(harnessPoint);
+                    if (distance < closestTargetDistance) {
+                        closestTargetDistance = distance;
+                        closestTargetIndex = i;
+                    }
+                }
+                
+                // Ensure proper order (source index should be before target index)
+                const startIndex = Math.min(closestSourceIndex, closestTargetIndex);
+                const endIndex = Math.max(closestSourceIndex, closestTargetIndex);
+                
+                // Add intermediate points from harness route with slight offset
+                for (let i = startIndex; i <= endIndex; i++) {
+                    const harnessPoint = new THREE.Vector3(...harnessRoute[i]);
+                    // Add small random offset to avoid z-fighting with harness
+                    const offset = new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02
+                    );
+                    wirePoints.push(harnessPoint.clone().add(offset));
+                }
+                
+                // End at target position
+                wirePoints.push(targetPos.clone());
+                
+                // Smooth the path using a curve
+                if (wirePoints.length > 2) {
+                    const curve = new THREE.CatmullRomCurve3(wirePoints);
+                    return curve.getPoints(Math.max(20, wirePoints.length * 3));
+                }
+                
+                return wirePoints;
+            }
+            
+            parseWireColor(colorString) {
+                const colorMap = {
+                    'R': 0xff0000, // Red
+                    'B': 0x000000, // Black
+                    'W': 0xffffff, // White
+                    'G': 0x00ff00, // Green
+                    'Y': 0xffff00, // Yellow
+                    'O': 0xff8800, // Orange
+                    'P': 0xff00ff, // Purple
+                    'Br': 0x8b4513, // Brown
+                    'Gr': 0x808080, // Gray
+                    'V': 0x8b00ff   // Violet
+                };
+                
+                const firstChar = colorString.charAt(0).toUpperCase();
+                return colorMap[firstChar] || 0x666666;
+            }
+            
+            buildZoneBoundaries() {
+                if (!this.sceneConfig?.zones) return;
+                
+                const zoneGroup = new THREE.Group();
+                zoneGroup.name = 'zones';
+                
+                for (const [zoneName, zoneData] of Object.entries(this.sceneConfig.zones)) {
+                    if (zoneData.bounds) {
+                        const { min, max } = zoneData.bounds;
+                        const size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+                        const center = [
+                            (min[0] + max[0]) / 2,
+                            (min[1] + max[1]) / 2,
+                            (min[2] + max[2]) / 2
+                        ];
+                        
+                        const geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+                        const mesh = new THREE.Mesh(geometry, this.materials.zone);
+                        mesh.position.set(center[0], center[1], center[2]);
+                        mesh.userData = { zoneName, zoneData, type: 'zone' };
+                        mesh.visible = false; // Hidden by default
+                        
+                        zoneGroup.add(mesh);
+                        this.zoneMeshes[zoneName] = mesh;
+                    }
+                }
+                
+                this.scene.add(zoneGroup);
+            }
+            
+            clearVisualization() {
+                // Remove existing groups
+                const groupsToRemove = ['components', 'harnesses', 'wires', 'zones'];
+                for (const groupName of groupsToRemove) {
+                    const group = this.scene.getObjectByName(groupName);
+                    if (group) {
+                        this.scene.remove(group);
+                    }
+                }
+                
+                // Clear mesh references
+                this.componentMeshes = {};
+                this.wireMeshes = {};
+                this.harnessMeshes = {};
+                this.zoneMeshes = {};
+            }
+            
+            setupEventListeners() {
+                // Window resize
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+                
+                // Mouse interaction for component selection (with drag detection)
+                let mouseDownPos = new THREE.Vector2();
+                let isDragOperation = false;
+                
+                this.renderer.domElement.addEventListener('mousedown', (event) => {
+                    mouseDownPos.set(event.clientX, event.clientY);
+                    isDragOperation = false;
+                });
+                
+                this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    if (mouseDownPos.length() > 0) {
+                        const distance = Math.sqrt(
+                            Math.pow(event.clientX - mouseDownPos.x, 2) + 
+                            Math.pow(event.clientY - mouseDownPos.y, 2)
+                        );
+                        if (distance > 5) { // 5 pixel threshold for drag detection
+                            isDragOperation = true;
+                        }
+                    }
+                });
+                
+                this.renderer.domElement.addEventListener('mouseup', (event) => {
+                    // Only handle component selection if it wasn't a drag operation
+                    if (!isDragOperation && mouseDownPos.length() > 0) {
+                        setTimeout(() => this.handleClick(event), 50); // Small delay to avoid conflicts
+                    }
+                    mouseDownPos.set(0, 0);
+                    isDragOperation = false;
+                });
+                
+                // Mouse hover for component labels
+                this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    if (!isDragOperation) {
+                        this.handleHover(event);
+                    }
+                });
+                
+                // Keyboard controls for camera movement
+                window.addEventListener('keydown', (event) => {
+                    this.keyState[event.code] = true;
+                    this.handleKeyboardInput(event);
+                });
+                
+                window.addEventListener('keyup', (event) => {
+                    this.keyState[event.code] = false;
+                });
+                
+                // Control buttons
+                document.getElementById('show-components').addEventListener('click', () => {
+                    this.toggleComponents();
+                });
+                
+                document.getElementById('show-wires').addEventListener('click', () => {
+                    this.toggleWires();
+                });
+                
+                document.getElementById('show-harnesses').addEventListener('click', () => {
+                    this.toggleHarnesses();
+                });
+                
+                document.getElementById('show-zones').addEventListener('click', () => {
+                    this.toggleZones();
+                });
+                
+                document.getElementById('show-labels').addEventListener('click', () => {
+                    this.toggleLabels();
+                });
+                
+                document.getElementById('realistic-view').addEventListener('click', () => {
+                    this.toggleRealisticView();
+                });
+                
+                // Camera control buttons
+                document.getElementById('camera-overview').addEventListener('click', () => {
+                    this.setCameraPosition('overview');
+                });
+                
+                document.getElementById('camera-front').addEventListener('click', () => {
+                    this.setCameraPosition('front');
+                });
+                
+                document.getElementById('camera-side').addEventListener('click', () => {
+                    this.setCameraPosition('side');
+                });
+                
+                document.getElementById('camera-top').addEventListener('click', () => {
+                    this.setCameraPosition('top');
+                });
+                
+                document.getElementById('camera-engine').addEventListener('click', () => {
+                    this.setCameraPosition('engine');
+                });
+                
+                document.getElementById('camera-dashboard').addEventListener('click', () => {
+                    this.setCameraPosition('dashboard');
+                });
+            }
+            
+            handleHover(event) {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                
+                // Get all intersectable objects
+                const intersectableObjects = [
+                    ...Object.values(this.componentMeshes),
+                    ...Object.values(this.harnessMeshes),
+                    ...Object.values(this.wireMeshes)
+                ];
+                
+                const intersects = this.raycaster.intersectObjects(intersectableObjects);
+                
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+                    if (this.hoveredObject !== object) {
+                        this.hoveredObject = object;
+                        this.showHoverLabel(event, object);
+                    }
+                    this.updateHoverLabelPosition(event);
+                } else {
+                    if (this.hoveredObject) {
+                        this.hoveredObject = null;
+                        this.hideHoverLabel();
+                    }
+                }
+            }
+            
+            showHoverLabel(event, object) {
+                const userData = object.userData;
+                let labelContent = '';
+                
+                if (userData.type === 'component') {
+                    const node = userData.node;
+                    labelContent = `
+                        <h4>${node.canonical_id || node.id}</h4>
+                        <div class="label-detail">Type: ${node.node_type}</div>
+                        <div class="label-detail">Zone: ${node.anchor_zone || 'Unknown'}</div>
+                        ${node.voltage ? `<div class="label-detail">Voltage: ${node.voltage}</div>` : ''}
+                        ${node.mounting_surface ? `<div class="label-detail">Mounting: ${node.mounting_surface}</div>` : ''}
+                    `;
+                } else if (userData.type === 'harness') {
+                    const harness = userData.harnessData;
+                    labelContent = `
+                        <h4>${userData.harnessId.replace('harness_', '').toUpperCase()} Harness</h4>
+                        <div class="label-detail">Wires: ${harness.bundleCount || 'Unknown'}</div>
+                        <div class="label-detail">Thickness: ${(harness.thickness * 1000).toFixed(1)}mm</div>
+                        <div class="label-detail">Length: ${this.calculatePathLength(harness.path).toFixed(2)}m</div>
+                    `;
+                } else if (userData.type === 'wire') {
+                    const edge = userData.edge;
+                    labelContent = `
+                        <h4>Wire Connection</h4>
+                        <div class="label-detail">From: ${edge.source}</div>
+                        <div class="label-detail">To: ${edge.target}</div>
+                        <div class="label-detail">Type: ${edge.relationship}</div>
+                    `;
+                }
+                
+                this.hoverLabel.innerHTML = labelContent;
+                this.hoverLabel.style.display = 'block';
+            }
+            
+            updateHoverLabelPosition(event) {
+                const offsetX = 15;
+                const offsetY = -10;
+                
+                let x = event.clientX + offsetX;
+                let y = event.clientY + offsetY;
+                
+                // Prevent label from going off-screen
+                const labelRect = this.hoverLabel.getBoundingClientRect();
+                if (x + labelRect.width > window.innerWidth) {
+                    x = event.clientX - labelRect.width - offsetX;
+                }
+                if (y + labelRect.height > window.innerHeight) {
+                    y = event.clientY - labelRect.height - offsetY;
+                }
+                
+                this.hoverLabel.style.left = x + 'px';
+                this.hoverLabel.style.top = y + 'px';
+            }
+            
+            hideHoverLabel() {
+                this.hoverLabel.style.display = 'none';
+            }
+            
+            handleClick(event) {
+                console.log('Handle click for component selection');
+                
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                
+                // Get all intersectable objects
+                const intersectableObjects = [
+                    ...Object.values(this.componentMeshes),
+                    ...Object.values(this.harnessMeshes),
+                    ...Object.values(this.wireMeshes)
+                ];
+                
+                const intersects = this.raycaster.intersectObjects(intersectableObjects);
+                
+                if (intersects.length > 0) {
+                    console.log('Selected object:', intersects[0].object.userData);
+                    this.selectObject(intersects[0].object);
+                } else {
+                    console.log('No object selected, clearing selection');
+                    this.clearSelection();
+                }
+            }
+            
+            selectObject(object) {
+                // Clear previous selection
+                this.clearSelection();
+                
+                this.selectedObject = object;
+                
+                // Highlight selected object
+                if (object.userData.type === 'component') {
+                    object.material = this.materials.component.selected;
+                } else if (object.userData.type === 'wire') {
+                    object.material = this.materials.wire.selected;
+                }
+                
+                // Show selection info
+                this.showSelectionInfo(object.userData);
+            }
+            
+            clearSelection() {
+                if (this.selectedObject) {
+                    // Restore original material
+                    const userData = this.selectedObject.userData;
+                    if (userData.type === 'component') {
+                        const node = userData.node;
+                        this.selectedObject.material = this.materials.component[node.node_type] || this.materials.component.default;
+                    } else if (userData.type === 'wire') {
+                        this.selectedObject.material = this.materials.wire.default;
+                    }
+                    
+                    this.selectedObject = null;
+                }
+                
+                // Hide selection info
+                document.getElementById('selection-info').style.display = 'none';
+            }
+            
+            showSelectionInfo(userData) {
+                const panel = document.getElementById('selection-info');
+                const details = document.getElementById('selection-details');
+                
+                let info = '';
+                
+                if (userData.type === 'component') {
+                    const node = userData.node;
+                    info = `
+                        <strong>Component:</strong> ${node.canonical_id || node.id}<br>
+                        <strong>Type:</strong> ${node.node_type}<br>
+                        <strong>Zone:</strong> ${node.anchor_zone || 'Unknown'}<br>
+                        <strong>Position:</strong> [${node.anchor_xyz ? node.anchor_xyz.map(x => x.toFixed(2)).join(', ') : 'N/A'}]<br>
+                        <strong>Voltage:</strong> ${node.voltage || 'N/A'}<br>
+                        ${node.mounting_surface ? `<strong>Mounting:</strong> ${node.mounting_surface}<br>` : ''}
+                        ${node.service_access ? `<strong>Access:</strong> ${node.service_access}<br>` : ''}
+                        ${node.notes ? `<strong>Notes:</strong> ${node.notes}<br>` : ''}
+                    `;
+                } else if (userData.type === 'harness') {
+                    const harness = userData.harnessData;
+                    info = `
+                        <strong>Harness:</strong> ${userData.harnessId}<br>
+                        <strong>Bundle Count:</strong> ${harness.bundleCount || 'Unknown'}<br>
+                        <strong>Thickness:</strong> ${(harness.thickness * 1000).toFixed(1)}mm<br>
+                        <strong>Path Length:</strong> ${this.calculatePathLength(harness.path).toFixed(2)}m<br>
+                    `;
+                } else if (userData.type === 'wire') {
+                    const edge = userData.edge;
+                    info = `
+                        <strong>Wire Connection:</strong><br>
+                        <strong>From:</strong> ${edge.source}<br>
+                        <strong>To:</strong> ${edge.target}<br>
+                        <strong>Relationship:</strong> ${edge.relationship}<br>
+                        ${edge.notes ? `<strong>Notes:</strong> ${edge.notes}<br>` : ''}
+                    `;
+                }
+                
+                details.innerHTML = info;
+                panel.style.display = 'block';
+            }
+            
+            calculatePathLength(path) {
+                if (!path || path.length < 2) return 0;
+                
+                let totalLength = 0;
+                for (let i = 1; i < path.length; i++) {
+                    const prev = path[i - 1];
+                    const curr = path[i];
+                    const dx = curr[0] - prev[0];
+                    const dy = curr[1] - prev[1];
+                    const dz = curr[2] - prev[2];
+                    totalLength += Math.sqrt(dx * dx + dy * dy + dz * dz);
+                }
+                return totalLength;
+            }
+            
+            toggleComponents() {
+                this.showComponents = !this.showComponents;
+                const group = this.scene.getObjectByName('components');
+                if (group) group.visible = this.showComponents;
+                
+                const btn = document.getElementById('show-components');
+                btn.classList.toggle('active', this.showComponents);
+            }
+            
+            toggleWires() {
+                this.showWires = !this.showWires;
+                const group = this.scene.getObjectByName('wires');
+                if (group) group.visible = this.showWires;
+                
+                const btn = document.getElementById('show-wires');
+                btn.classList.toggle('active', this.showWires);
+            }
+            
+            toggleHarnesses() {
+                this.showHarnesses = !this.showHarnesses;
+                const group = this.scene.getObjectByName('harnesses');
+                if (group) group.visible = this.showHarnesses;
+                
+                const btn = document.getElementById('show-harnesses');
+                btn.classList.toggle('active', this.showHarnesses);
+            }
+            
+            toggleZones() {
+                this.showZones = !this.showZones;
+                for (const mesh of Object.values(this.zoneMeshes)) {
+                    mesh.visible = this.showZones;
+                }
+                
+                const btn = document.getElementById('show-zones');
+                btn.classList.toggle('active', this.showZones);
+            }
+            
+            toggleLabels() {
+                this.showLabels = !this.showLabels;
+                // TODO: Implement label system
+                
+                const btn = document.getElementById('show-labels');
+                btn.classList.toggle('active', this.showLabels);
+            }
+            
+            toggleRealisticView() {
+                this.realisticView = !this.realisticView;
+                
+                if (this.realisticView) {
+                    // Position camera for realistic vehicle view
+                    this.camera.position.set(2, -3, 1.5);
+                    this.camera.lookAt(0, 0, 0.5);
+                } else {
+                    // Default overview position
+                    this.camera.position.set(3, -2, 2);
+                    this.camera.lookAt(0, 0, 0.5);
+                }
+                
+                if (this.controls) {
+                    this.controls.update();
+                }
+                
+                const btn = document.getElementById('realistic-view');
+                btn.classList.toggle('active', this.realisticView);
+            }
+            
+            handleKeyboardInput(event) {
+                // Handle special keys immediately
+                if (event.code === 'KeyR') {
+                    this.setCameraPosition('overview');
+                    event.preventDefault();
+                }
+            }
+            
+            updateCameraMovement() {
+                if (!this.camera || Object.keys(this.keyState).length === 0) return;
+                
+                // Calculate movement speed based on modifiers
+                let currentSpeed = this.cameraSpeed;
+                if (this.keyState['ShiftLeft'] || this.keyState['ShiftRight']) {
+                    currentSpeed *= this.fastSpeedMultiplier;
+                }
+                if (this.keyState['ControlLeft'] || this.keyState['ControlRight']) {
+                    currentSpeed *= this.slowSpeedMultiplier;
+                }
+                
+                // Get camera direction vectors
+                const forward = new THREE.Vector3();
+                this.camera.getWorldDirection(forward);
+                const right = new THREE.Vector3();
+                right.crossVectors(forward, this.camera.up).normalize();
+                const up = this.camera.up.clone();
+                
+                // Apply movement based on pressed keys
+                const movement = new THREE.Vector3();
+                
+                if (this.keyState['KeyW']) {
+                    movement.add(forward.multiplyScalar(currentSpeed));
+                }
+                if (this.keyState['KeyS']) {
+                    movement.add(forward.multiplyScalar(-currentSpeed));
+                }
+                if (this.keyState['KeyA']) {
+                    movement.add(right.multiplyScalar(-currentSpeed));
+                }
+                if (this.keyState['KeyD']) {
+                    movement.add(right.multiplyScalar(currentSpeed));
+                }
+                if (this.keyState['KeyQ']) {
+                    movement.add(up.multiplyScalar(-currentSpeed));
+                }
+                if (this.keyState['KeyE']) {
+                    movement.add(up.multiplyScalar(currentSpeed));
+                }
+                
+                // Apply movement
+                if (movement.length() > 0) {
+                    this.camera.position.add(movement);
+                    if (this.controls) {
+                        this.controls.target.add(movement);
+                        this.controls.update();
+                    }
+                }
+            }
+            
+            setCameraPosition(preset) {
+                const positions = {
+                    overview: {
+                        position: [3, -2, 2],
+                        target: [0, 0, 0.5]
+                    },
+                    front: {
+                        position: [4, 0, 1],
+                        target: [0, 0, 0.5]
+                    },
+                    side: {
+                        position: [0, -4, 1],
+                        target: [0, 0, 0.5]
+                    },
+                    top: {
+                        position: [0, 0, 4],
+                        target: [0, 0, 0.5]
+                    },
+                    engine: {
+                        position: [2.5, -1, 1.2],
+                        target: [1.3, 0, 0.6]
+                    },
+                    dashboard: {
+                        position: [1, -2, 1.5],
+                        target: [0.3, 0, 0.9]
+                    }
+                };
+                
+                const config = positions[preset];
+                if (!config) return;
+                
+                // Smoothly animate to new position
+                const startPos = this.camera.position.clone();
+                const startTarget = this.controls ? this.controls.target.clone() : new THREE.Vector3(0, 0, 0.5);
+                const endPos = new THREE.Vector3(...config.position);
+                const endTarget = new THREE.Vector3(...config.target);
+                
+                const duration = 1000; // 1 second
+                const startTime = Date.now();
+                
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Easing function (ease-in-out)
+                    const eased = progress < 0.5 
+                        ? 2 * progress * progress 
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    
+                    // Interpolate position and target
+                    this.camera.position.lerpVectors(startPos, endPos, eased);
+                    
+                    if (this.controls) {
+                        this.controls.target.lerpVectors(startTarget, endTarget, eased);
+                        this.controls.update();
+                    } else {
+                        this.camera.lookAt(...config.target);
+                    }
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                
+                animate();
+            }
+            
+            updateStatistics() {
+                document.getElementById('node-count').textContent = Object.keys(this.graphModel.nodesById).length;
+                document.getElementById('edge-count').textContent = this.graphModel.edges.length;
+                document.getElementById('zone-count').textContent = Object.keys(this.graphModel.byZone).length;
+                document.getElementById('harness-count').textContent = Object.keys(this.sceneConfig?.harnesses || {}).length;
+            }
+            
+            setupFilters() {
+                const container = document.getElementById('zone-filters');
+                container.innerHTML = '';
+                
+                // Initialize all zones as visible
+                this.visibleZones = new Set(Object.keys(this.graphModel.byZone));
+                
+                for (const zoneName of Object.keys(this.graphModel.byZone)) {
+                    const count = this.graphModel.byZone[zoneName].length;
+                    
+                    const filterDiv = document.createElement('div');
+                    filterDiv.className = 'zone-filter';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
+                    checkbox.id = `zone_${zoneName.replace(/\s+/g, '_')}`;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = checkbox.id;
+                    label.textContent = `${zoneName} (${count})`;
+                    
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            this.visibleZones.add(zoneName);
+                        } else {
+                            this.visibleZones.delete(zoneName);
+                        }
+                        this.updateZoneVisibility();
+                    });
+                    
+                    filterDiv.appendChild(checkbox);
+                    filterDiv.appendChild(label);
+                    container.appendChild(filterDiv);
+                }
+            }
+            
+            setupHarnessLegend() {
+                const container = document.getElementById('harness-legend');
+                container.innerHTML = '';
+                
+                const harnessColors = {
+                    'harness_engine': '#ff5722',
+                    'harness_dash': '#2196f3',
+                    'harness_floor': '#4caf50',
+                    'harness_Ldoor': '#9c27b0',
+                    'harness_Rdoor': '#ff9800',
+                    'harness_tailgate': '#607d8b'
+                };
+                
+                for (const [harnessId, color] of Object.entries(harnessColors)) {
+                    if (this.sceneConfig?.harnesses?.[harnessId]) {
+                        const legendDiv = document.createElement('div');
+                        legendDiv.className = 'harness-legend';
+                        
+                        const colorDiv = document.createElement('div');
+                        colorDiv.className = 'harness-color';
+                        colorDiv.style.backgroundColor = color;
+                        
+                        const labelDiv = document.createElement('div');
+                        const bundleCount = this.sceneConfig.harnesses[harnessId].bundleCount || 0;
+                        labelDiv.textContent = `${harnessId.replace('harness_', '')} (${bundleCount} wires)`;
+                        
+                        legendDiv.appendChild(colorDiv);
+                        legendDiv.appendChild(labelDiv);
+                        container.appendChild(legendDiv);
+                    }
+                }
+            }
+            
+            createZoneLabels() {
+                if (!this.sceneConfig?.zones) return;
+                
+                const zoneLabelsContainer = document.getElementById('zone-labels');
+                zoneLabelsContainer.innerHTML = ''; // Clear existing labels
+                
+                // Define simplified zone labels for the vehicle frame
+                const zoneLabels = {
+                    'Engine Compartment': { 
+                        position: [1.5, 0, 1.2], 
+                        label: '🔧 ENGINE BAY',
+                        description: 'Engine, battery, alternator, fuses'
+                    },
+                    'Dash Panel': { 
+                        position: [0.3, 0, 1.3], 
+                        label: '📊 DASHBOARD',
+                        description: 'ECUs, controls, instruments'
+                    },
+                    'Floor & Roof': { 
+                        position: [-0.3, 0, 1.5], 
+                        label: '🏠 CABIN',
+                        description: 'Passenger area, seats, roof'
+                    },
+                    'Left Front Door': { 
+                        position: [0.5, -0.9, 1.0], 
+                        label: '🚪 LEFT DOOR',
+                        description: 'Window, lock, mirror controls'
+                    },
+                    'Right Front Door': { 
+                        position: [0.5, 0.9, 1.0], 
+                        label: '🚪 RIGHT DOOR',
+                        description: 'Window, lock, mirror controls'
+                    },
+                    'Rear Cargo/Tailgate': { 
+                        position: [-1.5, 0, 1.2], 
+                        label: '📦 CARGO',
+                        description: 'Tailgate, rear lights, wiper'
+                    }
+                };
+                
+                // Store zone label elements for updating during camera movement
+                this.zoneLabels = {};
+                
+                for (const [zoneName, zoneInfo] of Object.entries(zoneLabels)) {
+                    if (this.sceneConfig.zones[zoneName]) {
+                        const labelElement = document.createElement('div');
+                        labelElement.className = 'zone-label';
+                        labelElement.innerHTML = `
+                            <div style="font-weight: bold;">${zoneInfo.label}</div>
+                            <div style="font-size: 9px; opacity: 0.8;">${zoneInfo.description}</div>
+                        `;
+                        labelElement.style.display = 'none'; // Initially hidden
+                        
+                        zoneLabelsContainer.appendChild(labelElement);
+                        
+                        this.zoneLabels[zoneName] = {
+                            element: labelElement,
+                            position: new THREE.Vector3(...zoneInfo.position),
+                            info: zoneInfo
+                        };
+                    }
+                }
+                
+                console.log('📍 Created zone labels for vehicle frame');
+            }
+            
+            updateZoneLabels() {
+                if (!this.zoneLabels || !this.camera) return;
+                
+                const tempVector = new THREE.Vector3();
+                
+                for (const [zoneName, labelData] of Object.entries(this.zoneLabels)) {
+                    const { element, position } = labelData;
+                    
+                    // Project 3D position to screen coordinates
+                    tempVector.copy(position);
+                    tempVector.project(this.camera);
+                    
+                    // Convert to screen pixels
+                    const x = (tempVector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (tempVector.y * -0.5 + 0.5) * window.innerHeight;
+                    const z = tempVector.z;
+                    
+                    // Check if the label is in front of the camera and within view
+                    if (z < 1 && x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
+                        element.style.display = 'block';
+                        element.style.left = x + 'px';
+                        element.style.top = y + 'px';
+                        
+                        // Fade based on distance from camera
+                        const distance = this.camera.position.distanceTo(position);
+                        const opacity = Math.max(0.3, Math.min(1.0, 5 / distance));
+                        element.style.opacity = opacity;
+                    } else {
+                        element.style.display = 'none';
+                    }
+                }
+            }
+            
+            updateZoneVisibility() {
+                for (const [nodeId, mesh] of Object.entries(this.componentMeshes)) {
+                    const node = this.graphModel.nodesById[nodeId];
+                    const visible = !node.anchor_zone || this.visibleZones.has(node.anchor_zone);
+                    mesh.visible = visible && this.showComponents;
+                }
+            }
+            
+            updateProgress(percent) {
+                document.getElementById('progress-fill').style.width = percent + '%';
+            }
+            
+            hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('progress-bar').style.display = 'none';
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                // Update camera movement from keyboard input
+                this.updateCameraMovement();
+                
+                if (this.controls) {
+                    this.controls.update();
+                }
+                
+                // Update zone labels positions (disabled)
+                // this.updateZoneLabels();
+                
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+        
+        // Initialize the enhanced viewer
+        window.addEventListener('DOMContentLoaded', () => {
+            new EnhancedElectricalViewer();
+        });
+    </script>
+</body>
+</html>

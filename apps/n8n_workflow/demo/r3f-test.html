@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NDJSON R3F Electrical System</title>
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #000; color: white; font-family: monospace; }
+        .container { position: relative; width: 100vw; height: 100vh; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; max-width: 300px; }
+        .controls { position: absolute; bottom: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; }
+        button { margin: 5px; padding: 5px 10px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #555; }
+        button.active { background: #0066cc; }
+        .stats { position: absolute; top: 10px; right: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; font-size: 12px; }
+        canvas { cursor: grab; }
+        canvas:active { cursor: grabbing; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info">
+            <h3>Pajero Pinin V60 Electrical System</h3>
+            <div id="nodeInfo">Click on components to see details</div>
+        </div>
+        
+        <div class="stats">
+            <div id="statsInfo">Loading...</div>
+        </div>
+        
+        <div class="controls">
+            <button id="showLabels" class="active">Labels</button>
+            <button id="showWires" class="active">Wires</button>
+            <button id="showFrame" class="active">Vehicle Frame</button>
+            <button id="showHarnesses" class="active">Harnesses</button>
+            <button id="resetView">Reset View</button>
+        </div>
+        
+        <canvas id="scene"></canvas>
+    </div>
+
+    <script>
+        // Use vanilla Three.js for better reliability
+        let scene, camera, renderer, controls;
+        let graphData = null;
+        let selectedNode = null;
+        let showLabels = true;
+        let showWires = true;
+        let showFrame = true;
+        let showHarnesses = true;
+
+        // Load and parse NDJSON data
+        async function loadGraphData() {
+            try {
+                console.log('Loading NDJSON data...');
+                const response = await fetch('./graph/model.ndjson');
+                console.log('Fetch response:', response.status, response.ok);
+                const ndjsonText = await response.text();
+                console.log('NDJSON text length:', ndjsonText.length);
+                console.log('First few lines:', ndjsonText.split('\n').slice(0, 3));
+                const lines = ndjsonText.trim().split('\n');
+                
+                const nodes = [];
+                const edges = [];
+                let metadata = null;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    try {
+                        const record = JSON.parse(line);
+                        
+                        if (record.kind === 'meta') {
+                            metadata = record;
+                        } else if (record.kind === 'node') {
+                            nodes.push(record);
+                        } else if (record.kind === 'edge') {
+                            edges.push(record);
+                        }
+                    } catch (parseError) {
+                        console.warn('Failed to parse line', i + 1, ':', line.substring(0, 100), parseError);
+                    }
+                }
+
+                const nodesById = {};
+                const byType = {};
+                const harnesses = {};
+                
+                nodes.forEach(node => { 
+                    nodesById[node.id] = node;
+                    if (!byType[node.node_type]) byType[node.node_type] = [];
+                    byType[node.node_type].push(node.id);
+                    
+                    // Index harnesses
+                    if (node.node_type === 'harness') {
+                        harnesses[node.id] = node;
+                    }
+                });
+
+                graphData = { nodes, edges, nodesById, metadata, byType, harnesses };
+                
+                // Update stats
+                document.getElementById('statsInfo').innerHTML = 
+                    '<strong>Pajero Pinin V60</strong><br/>' +
+                    'Nodes: ' + nodes.length + '<br/>' +
+                    'Edges: ' + edges.length + '<br/>' +
+                    'Components: ' + (byType.component ? byType.component.length : 0) + '<br/>' +
+                    'Fuses: ' + (byType.fuse ? byType.fuse.length : 0) + '<br/>' +
+                    'Relays: ' + (byType.relay ? byType.relay.length : 0) + '<br/>' +
+                    'Wires: ' + (byType.wire ? byType.wire.length : 0) + '<br/>' +
+                    'Harnesses: ' + (byType.harness ? byType.harness.length : 0);
+                
+                console.log('Parsed data:', nodes.length, 'nodes,', edges.length, 'edges');
+                console.log('Node types:', Object.keys(byType));
+                
+                return graphData;
+            } catch (err) {
+                console.error('Failed to load graph data:', err);
+                return null;
+            }
+        }
+
+        // Initialize Three.js scene
+        function initScene() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+            
+            // Camera setup - positioned to show car from front-right
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(5, 3, 3);
+            camera.lookAt(0, 0, 1);
+            
+            // Renderer setup
+            const canvas = document.getElementById('scene');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+            directionalLight2.position.set(-10, -10, -5);
+            scene.add(directionalLight2);
+            
+            // Controls - handle case where OrbitControls might not be available
+            if (THREE.OrbitControls) {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.1;
+                controls.target.set(0, 0, 0.5); // Focus on car center
+            } else {
+                console.warn('OrbitControls not available, using basic mouse controls');
+                // Add basic mouse controls fallback
+                let mouseX = 0, mouseY = 0;
+                renderer.domElement.addEventListener('mousemove', function(event) {
+                    if (event.buttons === 1) { // Left mouse button
+                        mouseX = event.clientX;
+                        mouseY = event.clientY;
+                        camera.position.x = Math.sin(mouseX * 0.01) * 5;
+                        camera.position.z = Math.cos(mouseX * 0.01) * 5;
+                        camera.position.y = (mouseY / window.innerHeight - 0.5) * 4;
+                        camera.lookAt(0, 0, 0.5);
+                    }
+                });
+            }
+            
+            // Add coordinate axes (larger for visibility)
+            const axesHelper = new THREE.AxesHelper(2);
+            scene.add(axesHelper);
+            
+            console.log('Camera position:', camera.position);
+            console.log('Camera looking at:', camera.getWorldDirection(new THREE.Vector3()));
+            
+            // Add a test cube to verify rendering works
+            const testGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const testMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+            const testCube = new THREE.Mesh(testGeometry, testMaterial);
+            testCube.position.set(0, 0, 1);
+            scene.add(testCube);
+            console.log('Test cube added at (0,0,1)');
+        }
+
+        // Create vehicle frame outline (Pajero Pinin dimensions)
+        function createVehicleFrame() {
+            if (!showFrame) return;
+            
+            const frameGroup = new THREE.Group();
+            frameGroup.name = 'vehicleFrame';
+            
+            // Pajero Pinin approximate dimensions (meters)
+            // Length: 4.2m, Width: 1.7m, Height: 1.8m
+            // Wheelbase: 2.57m
+            
+            const frameGeometry = new THREE.EdgesGeometry(
+                new THREE.BoxGeometry(4.2, 1.7, 1.8)
+            );
+            const frameMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xffffff, 
+                linewidth: 5,
+                transparent: true,
+                opacity: 1.0
+            });
+            const frameWireframe = new THREE.LineSegments(frameGeometry, frameMaterial);
+            frameWireframe.position.set(0, 0, 0.9); // Center at ground
+            frameGroup.add(frameWireframe);
+            
+            // Add zone indicators
+            const zones = [
+                { name: 'Engine Bay', pos: [1.6, 0, 1.2], color: 0xff4444, size: [1.2, 1.4, 1.0] },
+                { name: 'Dash Panel', pos: [0.3, 0, 1.2], color: 0x4444ff, size: [0.8, 1.4, 0.6] },
+                { name: 'Floor & Roof', pos: [-0.5, 0, 0.5], color: 0x44ff44, size: [2.0, 1.4, 0.3] },
+                { name: 'Rear Cargo', pos: [-1.8, 0, 1.0], color: 0xffff44, size: [1.0, 1.4, 1.2] }
+            ];
+            
+            zones.forEach(zone => {
+                const zoneGeometry = new THREE.EdgesGeometry(
+                    new THREE.BoxGeometry(...zone.size)
+                );
+                const zoneMaterial = new THREE.LineBasicMaterial({ 
+                    color: zone.color,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const zoneWireframe = new THREE.LineSegments(zoneGeometry, zoneMaterial);
+                zoneWireframe.position.set(...zone.pos);
+                frameGroup.add(zoneWireframe);
+            });
+            
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(6, 4);
+            const groundMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x111111,
+                transparent: true,
+                opacity: 0.3
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0;
+            ground.receiveShadow = true;
+            frameGroup.add(ground);
+            
+            // Dimensional markers
+            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            for (let x = -2; x <= 2; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    const marker = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.01),
+                        markerMaterial
+                    );
+                    marker.position.set(x, y, 0.01);
+                    frameGroup.add(marker);
+                }
+            }
+            
+            scene.add(frameGroup);
+        }
+
+        // Create harness routes
+        function createHarnesses() {
+            if (!showHarnesses || !graphData) return;
+            
+            const harnessGroup = new THREE.Group();
+            harnessGroup.name = 'harnesses';
+            
+            // Define harness routes between zones
+            const harnessRoutes = [
+                {
+                    name: 'Engine-to-Dash',
+                    points: [[1.6, 0, 1.2], [0.9, 0, 1.0], [0.3, 0, 1.2]],
+                    color: 0xff4444,
+                    thickness: 0.02
+                },
+                {
+                    name: 'Dash-to-Floor',
+                    points: [[0.3, 0, 1.2], [0.0, 0, 0.8], [-0.5, 0, 0.5]],
+                    color: 0x4444ff,
+                    thickness: 0.015
+                },
+                {
+                    name: 'Floor-to-Rear',
+                    points: [[-0.5, 0, 0.5], [-1.0, 0, 0.6], [-1.8, 0, 1.0]],
+                    color: 0x44ff44,
+                    thickness: 0.015
+                },
+                {
+                    name: 'Left-Door',
+                    points: [[0.3, -0.7, 1.2], [0.3, -0.85, 1.1]],
+                    color: 0xff44ff,
+                    thickness: 0.01
+                },
+                {
+                    name: 'Right-Door',
+                    points: [[0.3, 0.7, 1.2], [0.3, 0.85, 1.1]],
+                    color: 0x44ffff,
+                    thickness: 0.01
+                }
+            ];
+            
+            harnessRoutes.forEach(route => {
+                const curve = new THREE.CatmullRomCurve3(
+                    route.points.map(p => new THREE.Vector3(...p))
+                );
+                
+                const tubeGeometry = new THREE.TubeGeometry(curve, 20, route.thickness, 8, false);
+                const tubeMaterial = new THREE.MeshLambertMaterial({ 
+                    color: route.color,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+                tube.userData = { type: 'harness', name: route.name };
+                harnessGroup.add(tube);
+            });
+            
+            scene.add(harnessGroup);
+        }
+
+        // Create components
+        function createComponents() {
+            if (!graphData) return;
+            
+            // Remove existing components
+            const existingComponents = scene.getObjectByName('components');
+            if (existingComponents) scene.remove(existingComponents);
+            
+            const componentsGroup = new THREE.Group();
+            componentsGroup.name = 'components';
+            
+            const typeColors = {
+                component: 0x4a90e2,
+                fuse: 0xf5a623,
+                relay: 0x7ed321,
+                bus: 0xbd10e0,
+                ground_point: 0x000000,
+                connector: 0x9013fe
+            };
+            
+            graphData.nodes.filter(node => 
+                ['component', 'fuse', 'relay', 'bus', 'ground_point', 'connector'].includes(node.node_type) && 
+                node.anchor_xyz
+            ).forEach(node => {
+                const size = node.bbox_m || [0.2, 0.2, 0.1]; // Made much larger for visibility
+                let geometry;
+                
+                switch (node.node_type) {
+                    case 'fuse':
+                        geometry = new THREE.CylinderGeometry(size[0]/2, size[0]/2, size[2], 8);
+                        break;
+                    case 'ground_point':
+                        geometry = new THREE.SphereGeometry(size[0], 8, 8);
+                        break;
+                    default:
+                        geometry = new THREE.BoxGeometry(...size);
+                }
+                
+                const material = new THREE.MeshLambertMaterial({ 
+                    color: typeColors[node.node_type] || 0x888888,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(...node.anchor_xyz);
+                mesh.userData = node;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                
+                componentsGroup.add(mesh);
+            });
+            
+            scene.add(componentsGroup);
+        }
+
+        // Create wires with harness routing
+        function createWires() {
+            if (!showWires || !graphData) return;
+            
+            // Remove existing wires
+            const existingWires = scene.getObjectByName('wires');
+            if (existingWires) scene.remove(existingWires);
+            
+            const wiresGroup = new THREE.Group();
+            wiresGroup.name = 'wires';
+            
+            const wireColorMap = {
+                'W': 0xffffff, 'B': 0x333333, 'R': 0xff0000, 
+                'G': 0x00ff00, 'Y': 0xffff00, 'BL': 0x0000ff,
+                'BR': 0x8b4513, 'O': 0xffa500, 'P': 0x800080
+            };
+            
+            graphData.nodes.filter(node => 
+                node.node_type === 'wire' && node.path_xyz
+            ).forEach(node => {
+                // Get wire color
+                let wireColor = 0x888888;
+                if (node.color) {
+                    const baseColor = node.color.split(/[-/\\s]/)[0];
+                    wireColor = wireColorMap[baseColor] || 0xcccccc;
+                }
+                
+                // Create wire segments
+                for (let i = 0; i < node.path_xyz.length - 1; i++) {
+                    const start = new THREE.Vector3(...node.path_xyz[i]);
+                    const end = new THREE.Vector3(...node.path_xyz[i + 1]);
+                    
+                    const direction = new THREE.Vector3().subVectors(end, start);
+                    const length = direction.length();
+                    
+                    if (length > 0.001) {
+                        const geometry = new THREE.CylinderGeometry(0.002, 0.002, length, 6);
+                        const material = new THREE.MeshLambertMaterial({ 
+                            color: wireColor,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        
+                        const cylinder = new THREE.Mesh(geometry, material);
+                        cylinder.position.copy(start.clone().add(end).multiplyScalar(0.5));
+                        cylinder.lookAt(end);
+                        cylinder.rotateX(Math.PI / 2);
+                        cylinder.userData = node;
+                        
+                        wiresGroup.add(cylinder);
+                    }
+                }
+            });
+            
+            scene.add(wiresGroup);
+        }
+
+        // Mouse interaction
+        function setupInteraction() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            function onMouseClick(event) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                
+                const componentsGroup = scene.getObjectByName('components');
+                if (!componentsGroup) return;
+                
+                const intersects = raycaster.intersectObjects(componentsGroup.children);
+                
+                if (intersects.length > 0) {
+                    const node = intersects[0].object.userData;
+                    selectedNode = node;
+                    
+                    // Update info panel
+                    const connections = graphData.edges.filter(e => 
+                        e.source === node.id || e.target === node.id
+                    ).length;
+                    
+                    document.getElementById('nodeInfo').innerHTML = 
+                        '<strong>' + (node.canonical_id || node.id) + '</strong><br/>' +
+                        '<em>Type:</em> ' + node.node_type + '<br/>' +
+                        '<em>Zone:</em> ' + (node.anchor_zone || 'N/A') + '<br/>' +
+                        (node.voltage ? '<em>Voltage:</em> ' + node.voltage + '<br/>' : '') +
+                        (node.color ? '<em>Color:</em> ' + node.color + '<br/>' : '') +
+                        (node.gauge ? '<em>Gauge:</em> ' + node.gauge + '<br/>' : '') +
+                        (node.signal ? '<em>Signal:</em> ' + node.signal + '<br/>' : '') +
+                        '<em>Connections:</em> ' + connections + '<br/>' +
+                        '<em>Position:</em> [' + node.anchor_xyz.map(function(v) { return v.toFixed(2); }).join(', ') + ']';
+                    
+                    // Highlight selected component
+                    componentsGroup.children.forEach(mesh => {
+                        if (mesh.userData.id === node.id) {
+                            mesh.material.emissive.setHex(0x444444);
+                        } else {
+                            mesh.material.emissive.setHex(0x000000);
+                        }
+                    });
+                }
+            }
+            
+            renderer.domElement.addEventListener('click', onMouseClick);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls && controls.update) {
+                controls.update();
+            }
+            renderer.render(scene, camera);
+        }
+
+        // Window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Button handlers
+        function setupControls() {
+            document.getElementById('showLabels').addEventListener('click', () => {
+                showLabels = !showLabels;
+                document.getElementById('showLabels').classList.toggle('active', showLabels);
+            });
+            
+            document.getElementById('showWires').addEventListener('click', () => {
+                showWires = !showWires;
+                document.getElementById('showWires').classList.toggle('active', showWires);
+                createWires();
+            });
+            
+            document.getElementById('showFrame').addEventListener('click', () => {
+                showFrame = !showFrame;
+                document.getElementById('showFrame').classList.toggle('active', showFrame);
+                const frame = scene.getObjectByName('vehicleFrame');
+                if (frame) scene.remove(frame);
+                createVehicleFrame();
+            });
+            
+            document.getElementById('showHarnesses').addEventListener('click', () => {
+                showHarnesses = !showHarnesses;
+                document.getElementById('showHarnesses').classList.toggle('active', showHarnesses);
+                const harnesses = scene.getObjectByName('harnesses');
+                if (harnesses) scene.remove(harnesses);
+                createHarnesses();
+            });
+            
+            document.getElementById('resetView').addEventListener('click', () => {
+                camera.position.set(3, 2, 2);
+                camera.lookAt(0, 0, 0.5);
+                if (controls && controls.target) {
+                    controls.target.set(0, 0, 0.5);
+                    controls.update();
+                }
+            });
+        }
+
+        // Initialize everything
+        async function init() {
+            initScene();
+            await loadGraphData();
+            
+            if (graphData) {
+                console.log('Creating scene elements...');
+                createVehicleFrame();
+                console.log('Vehicle frame created');
+                createHarnesses();
+                console.log('Harnesses created');
+                createComponents();
+                console.log('Components created');
+                createWires();
+                console.log('Wires created');
+                setupInteraction();
+                console.log('Interaction setup complete');
+                console.log('Scene has', scene.children.length, 'children');
+            } else {
+                console.error('No graph data available');
+                document.getElementById('nodeInfo').innerHTML = 'Failed to load electrical system data';
+            }
+            
+            setupControls();
+            animate();
+        }
+
+        // Initialize when page is ready
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('load', function() {
+            console.log('Page loaded, checking Three.js...');
+            console.log('THREE available:', typeof THREE !== 'undefined');
+            console.log('OrbitControls available:', typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined');
+            
+            if (typeof THREE !== 'undefined') {
+                init();
+            } else {
+                console.error('Three.js not loaded properly');
+                document.getElementById('nodeInfo').innerHTML = 'Error: Three.js failed to load';
+            }
+        });
+    </script>
+</body>
+</html>
