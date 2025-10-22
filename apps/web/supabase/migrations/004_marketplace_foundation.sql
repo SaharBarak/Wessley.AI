@@ -7,7 +7,7 @@
 
 -- Supplier/vendor management (open marketplace)
 CREATE TABLE public.suppliers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Basic supplier info
   name TEXT NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE public.suppliers (
 
 -- Comprehensive parts catalog
 CREATE TABLE public.parts_catalog (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supplier_id UUID NOT NULL REFERENCES public.suppliers(id) ON DELETE CASCADE,
   
   -- Basic part information
@@ -116,7 +116,7 @@ CREATE TABLE public.parts_catalog (
 
 -- AI-generated part recommendations
 CREATE TABLE public.part_recommendations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   part_id UUID REFERENCES public.parts_catalog(id) ON DELETE SET NULL,
@@ -146,7 +146,7 @@ CREATE TABLE public.part_recommendations (
 
 -- Part reviews and ratings
 CREATE TABLE public.part_reviews (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   part_id UUID NOT NULL REFERENCES public.parts_catalog(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE SET NULL,
@@ -175,7 +175,7 @@ CREATE TABLE public.part_reviews (
 
 -- Part compatibility matrix for vehicle-specific recommendations
 CREATE TABLE public.part_compatibility (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   part_id UUID NOT NULL REFERENCES public.parts_catalog(id) ON DELETE CASCADE,
   
   -- Vehicle compatibility

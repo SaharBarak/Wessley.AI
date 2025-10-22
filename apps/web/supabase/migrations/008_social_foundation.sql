@@ -7,7 +7,7 @@
 
 -- User follows for when workspaces become public
 CREATE TABLE public.user_follows (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   follower_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   followed_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
@@ -22,7 +22,7 @@ CREATE TABLE public.user_follows (
 
 -- Workspace follows (following specific vehicle projects)
 CREATE TABLE public.workspace_follows (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   follower_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   followed_workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
@@ -36,7 +36,7 @@ CREATE TABLE public.workspace_follows (
 
 -- Workspace likes (liking vehicle projects)
 CREATE TABLE public.workspace_likes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
@@ -47,7 +47,7 @@ CREATE TABLE public.workspace_likes (
 
 -- Post likes (liking specific posts within workspaces)
 CREATE TABLE public.post_likes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES public.workspace_posts(id) ON DELETE CASCADE,
   
@@ -58,7 +58,7 @@ CREATE TABLE public.post_likes (
 
 -- Post comments (commenting on posts)
 CREATE TABLE public.post_comments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES public.workspace_posts(id) ON DELETE CASCADE,
   parent_comment_id UUID REFERENCES public.post_comments(id) ON DELETE CASCADE, -- For nested replies
@@ -71,7 +71,7 @@ CREATE TABLE public.post_comments (
 
 -- Social notifications for when users interact with content
 CREATE TABLE public.social_notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   sender_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for system notifications
   
@@ -101,7 +101,7 @@ CREATE TABLE public.social_notifications (
 
 -- User social stats (cached for performance)
 CREATE TABLE public.user_social_stats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   -- Follower stats
@@ -133,7 +133,7 @@ CREATE TABLE public.user_social_stats (
 
 -- Content moderation for when social features are active
 CREATE TABLE public.content_moderation (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Content identification
   content_type TEXT NOT NULL CHECK (content_type IN ('workspace', 'post', 'comment', 'profile')),

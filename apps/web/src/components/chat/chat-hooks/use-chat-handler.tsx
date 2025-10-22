@@ -71,6 +71,9 @@ export const useChatHandler = () => {
 
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Extract prompt from chatSettings
+  const prompt = chatSettings?.prompt || ""
+
   useEffect(() => {
     if (!isPromptPickerOpen || !isFilePickerOpen || !isToolPickerOpen) {
       chatInputRef.current?.focus()

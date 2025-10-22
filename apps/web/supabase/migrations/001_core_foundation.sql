@@ -2,7 +2,6 @@
 -- Profiles, workspaces, vehicles, basic posts, vehicle signature generation
 
 -- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- For secure random generation
 
 -- =========================================
@@ -11,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- For secure random generation
 
 -- Enhanced profiles table for user data and preferences
 CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
@@ -37,7 +36,7 @@ CREATE TABLE public.profiles (
 
 -- Workspaces table (Project = Vehicle = Workspace)
 CREATE TABLE public.workspaces (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   -- User-facing project details
@@ -63,7 +62,7 @@ CREATE TABLE public.workspaces (
 
 -- Detailed vehicle information linked to workspaces
 CREATE TABLE public.vehicles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
   -- Basic vehicle info (required)
@@ -96,7 +95,7 @@ CREATE TABLE public.vehicles (
 
 -- Freeform posts within workspaces for different aspects/work
 CREATE TABLE public.workspace_posts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   

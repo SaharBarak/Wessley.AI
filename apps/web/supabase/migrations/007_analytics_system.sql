@@ -7,7 +7,7 @@
 
 -- User interaction tracking for data company insights
 CREATE TABLE public.user_interactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE SET NULL,
   
@@ -42,7 +42,7 @@ CREATE TABLE public.user_interactions (
 
 -- System performance metrics
 CREATE TABLE public.performance_metrics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Metric identification
   metric_type TEXT NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE public.performance_metrics (
 
 -- Business intelligence aggregated data
 CREATE TABLE public.business_intelligence (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Report details
   report_type TEXT NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE public.business_intelligence (
 
 -- User behavior analytics
 CREATE TABLE public.user_behavior_analytics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   -- Behavior metrics
@@ -139,7 +139,7 @@ CREATE TABLE public.user_behavior_analytics (
 
 -- Feature usage tracking
 CREATE TABLE public.feature_usage_stats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Feature identification
   feature_name TEXT NOT NULL,
@@ -172,7 +172,7 @@ CREATE TABLE public.feature_usage_stats (
 
 -- A/B testing framework
 CREATE TABLE public.ab_tests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Test details
   test_name TEXT NOT NULL UNIQUE,
@@ -208,7 +208,7 @@ CREATE TABLE public.ab_tests (
 
 -- A/B test participant assignments
 CREATE TABLE public.ab_test_participants (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ab_test_id UUID NOT NULL REFERENCES public.ab_tests(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
@@ -229,7 +229,7 @@ CREATE TABLE public.ab_test_participants (
 
 -- Error and issue tracking
 CREATE TABLE public.error_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Error identification
   error_type TEXT NOT NULL,

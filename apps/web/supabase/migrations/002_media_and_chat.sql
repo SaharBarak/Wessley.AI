@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
 
 -- All media files uploaded by users (gallery, chat uploads, receipts)
 CREATE TABLE public.media_files (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID REFERENCES public.workspace_posts(id) ON DELETE SET NULL,
@@ -46,7 +46,7 @@ CREATE TABLE public.media_files (
 
 -- Chat conversations within workspaces (user-controlled branching)
 CREATE TABLE public.chat_conversations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID REFERENCES public.workspace_posts(id) ON DELETE SET NULL,
@@ -74,7 +74,7 @@ CREATE TABLE public.chat_conversations (
 
 -- Chat messages with full AI integration
 CREATE TABLE public.chat_messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES public.chat_conversations(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- NULL for system messages
   

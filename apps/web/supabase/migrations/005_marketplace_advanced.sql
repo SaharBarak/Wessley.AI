@@ -7,7 +7,7 @@
 
 -- Fault detection and expense projections
 CREATE TABLE public.fault_detections (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
@@ -49,7 +49,7 @@ CREATE TABLE public.fault_detections (
 
 -- Shopping cart for marketplace
 CREATE TABLE public.shopping_cart (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
@@ -61,7 +61,7 @@ CREATE TABLE public.shopping_cart (
 
 -- Shopping cart items
 CREATE TABLE public.shopping_cart_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cart_id UUID NOT NULL REFERENCES public.shopping_cart(id) ON DELETE CASCADE,
   part_id UUID NOT NULL REFERENCES public.parts_catalog(id) ON DELETE CASCADE,
   
@@ -81,7 +81,7 @@ CREATE TABLE public.shopping_cart_items (
 
 -- Marketplace transactions and commission tracking
 CREATE TABLE public.marketplace_transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   supplier_id UUID NOT NULL REFERENCES public.suppliers(id) ON DELETE CASCADE,
@@ -121,7 +121,7 @@ CREATE TABLE public.marketplace_transactions (
 
 -- Transaction items for bulk orders
 CREATE TABLE public.transaction_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   transaction_id UUID NOT NULL REFERENCES public.marketplace_transactions(id) ON DELETE CASCADE,
   part_id UUID NOT NULL REFERENCES public.parts_catalog(id) ON DELETE CASCADE,
   
@@ -139,7 +139,7 @@ CREATE TABLE public.transaction_items (
 
 -- Commission payouts to suppliers
 CREATE TABLE public.commission_payouts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supplier_id UUID NOT NULL REFERENCES public.suppliers(id) ON DELETE CASCADE,
   
   -- Payout details
@@ -173,7 +173,7 @@ CREATE TABLE public.commission_payouts (
 
 -- Marketplace analytics and metrics
 CREATE TABLE public.marketplace_metrics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Metric identification
   metric_type TEXT NOT NULL CHECK (metric_type IN ('daily_sales', 'supplier_performance', 'part_popularity', 'user_behavior', 'commission_summary')),

@@ -7,7 +7,7 @@
 
 -- Expense categories (predefined + custom)
 CREATE TABLE public.expense_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE, -- NULL for global categories
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for system categories
   
@@ -25,7 +25,7 @@ CREATE TABLE public.expense_categories (
 
 -- Comprehensive expense tracking with GPT inference
 CREATE TABLE public.expenses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID REFERENCES public.workspace_posts(id) ON DELETE SET NULL,
@@ -78,7 +78,7 @@ CREATE TABLE public.expenses (
 
 -- Budget management (workspace and post level)
 CREATE TABLE public.budgets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   post_id UUID REFERENCES public.workspace_posts(id) ON DELETE CASCADE, -- NULL for workspace-level budget
   
@@ -103,7 +103,7 @@ CREATE TABLE public.budgets (
 
 -- Budget allocations to track spending against specific budgets
 CREATE TABLE public.budget_allocations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   budget_id UUID NOT NULL REFERENCES public.budgets(id) ON DELETE CASCADE,
   expense_id UUID NOT NULL REFERENCES public.expenses(id) ON DELETE CASCADE,
   

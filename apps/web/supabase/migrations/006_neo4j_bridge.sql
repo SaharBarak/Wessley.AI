@@ -7,7 +7,7 @@
 
 -- Electrical analysis job tracking (no component storage - data in Neo4j)
 CREATE TABLE public.electrical_analyses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   media_file_id UUID REFERENCES public.media_files(id) ON DELETE SET NULL,
@@ -53,7 +53,7 @@ CREATE TABLE public.electrical_analyses (
 
 -- Neo4j synchronization status tracking
 CREATE TABLE public.neo4j_sync_status (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
   vehicle_signature TEXT NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE public.neo4j_sync_status (
 
 -- Analysis job queue for processing electrical images
 CREATE TABLE public.analysis_job_queue (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   electrical_analysis_id UUID NOT NULL REFERENCES public.electrical_analyses(id) ON DELETE CASCADE,
   
   -- Job details
@@ -121,7 +121,7 @@ CREATE TABLE public.analysis_job_queue (
 
 -- Component detection cache for faster repeated analysis
 CREATE TABLE public.component_detection_cache (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   -- Image identification
   image_hash TEXT NOT NULL UNIQUE, -- SHA-256 hash of image content
@@ -147,7 +147,7 @@ CREATE TABLE public.component_detection_cache (
 
 -- Neo4j operation logs for debugging and monitoring
 CREATE TABLE public.neo4j_operation_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
   
   -- Operation details
