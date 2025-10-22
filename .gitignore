@@ -51,4 +51,4 @@ Thumbs.db
 
 # Temporary files
 tmp/
-temp/
+temp/**/n8n.env
