@@ -1,16 +1,34 @@
-# 🧰 Wessley.ai
+# Wessley.ai: Automotive Intelligence Platform
 
-AI-powered web app for reverse engineering vehicle electrical systems using photos.
+**Multi-Modal AI System for Vehicle Electrical Analysis and Community Discovery**
+
+I'm building an automotive diagnostics platform that integrates computer vision, deep learning, and knowledge graph technologies. Wessley.ai uses convolutional neural networks (CNNs), vector databases, and large language models for vehicle electrical system analysis while providing a collaborative community for automotive professionals and enthusiasts.
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-* Upload engine bay / fusebox / dash photos
-* Detect relays, wires, gauges, colors using GPT-4 Vision
-* Generate interactive Mermaid wiring diagrams
-* Ask tech questions to a chat assistant grounded in your actual diagram
-* Fully client-first UI + secure backend for GPT-4 / Claude API routing
+### Deep Learning Vehicle Analysis
+* **Computer Vision Pipeline** - Photo upload system designed for convolutional neural network processing with planned OCR and component detection capabilities
+* **Knowledge Graph Architecture** - Neo4j database integration with vector embedding infrastructure for automotive electrical component relationships
+* **3D Model Generation** - Framework for converting 2D vehicle photos into interactive 3D electrical system representations using computer vision algorithms
+* **AI Chat Interface** - Natural language processing system with planned integration to vehicle-specific electrical data and technical knowledge base
+
+### Social Platform Architecture
+* **Workspace-Centric Design** - Database schema supporting project-based vehicle workspaces with comprehensive data models
+* **Social Infrastructure** - Complete database foundation for user interactions, follows, likes, comments, and content sharing
+* **Community Features** - Planned Pinterest-style discovery feed for automotive projects and electrical modifications
+* **Collaboration Tools** - Framework for sharing diagnostics, repairs, and technical documentation within the community
+
+### Financial & Marketplace Infrastructure
+* **Expense Tracking System** - Database schema with AI-powered categorization for parts, labor, and maintenance costs
+* **Marketplace Foundation** - Complete data models for parts catalog, supplier integration, and transaction processing
+* **Budget Management** - Project-level financial tracking with expense allocation and reporting capabilities
+
+### Data Architecture
+* **Hybrid Database Design** - Supabase for application data with Neo4j integration for electrical system graphs
+* **Vehicle Signature System** - Unique identifiers linking web application data to specialized AI services
+* **Row-Level Security** - Multi-tenant data isolation with comprehensive access control policies
 
 ---
 
