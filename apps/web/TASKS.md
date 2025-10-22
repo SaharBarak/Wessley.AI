@@ -108,3 +108,97 @@ Chat Input → Command Parser → useChatStore → useSceneStore → SceneCanvas
 Action Menu → Direct Commands → useSceneStore → SceneCanvas
 Vehicle Selector → Vehicle Change → useSceneStore → SceneCanvas Update
 ```
+
+---
+
+## Social Network Platform Tasks 🌐
+
+### MVP Phase 1: Core Vehicle Assistant (Priority: HIGH)
+*Focus: Core AI analysis and chat functionality*
+
+- [ ] **Database Migration 001**: Core vehicle assistant tables
+  - profiles, vehicles, vehicle_images, electrical_analyses, conversations, messages
+  - RLS policies for multi-tenant security
+  - Auto-profile creation triggers
+
+### MVP Phase 2: Basic Social Features (Priority: MEDIUM)
+*Focus: Pinterest-style sharing and discovery*
+
+- [ ] **Database Migration 002**: Basic social features
+  - posts (vehicle projects with images/content)
+  - user_follows (follower/following relationships)
+  - post_likes (engagement tracking)
+  - post_comments (community interaction)
+
+- [ ] **Social Feed UI Components**
+  - Pinterest-style grid layout for post discovery
+  - Post creation form with image upload
+  - User profile pages with posts grid
+  - Follow/unfollow functionality
+
+### MVP Phase 3: Advanced Social Features (Priority: LOW)
+*Focus: Full social platform capabilities*
+
+- [ ] **Database Migration 003**: Advanced social features
+  - collections/boards (Pinterest-style organization)
+  - post_bookmarks (save functionality)
+  - tags system with discovery
+  - notifications table for real-time updates
+
+- [ ] **Advanced Social UI**
+  - Collections/boards management
+  - Tag-based discovery and filtering
+  - Notification center
+  - Advanced search (users, posts, tags, vehicles)
+
+### MVP Phase 4: Platform Features (Priority: FUTURE)
+*Focus: Production-ready social network*
+
+- [ ] **Content & Media System**
+  - Video upload and processing pipeline
+  - Image optimization and CDN integration
+  - Content moderation tools and reporting system
+  - Rich text editor with mentions (@username)
+
+- [ ] **User Experience & Discovery**
+  - Trending/popular posts algorithm
+  - Recommendation engine ("Users like you also follow...")
+  - User verification and badges system
+  - Enhanced profiles with bio, social links, expertise
+
+- [ ] **Engagement & Community**
+  - Direct messaging/chat system
+  - Groups/communities (BMW E46 enthusiasts, etc.)
+  - Events system (meetups, car shows)
+  - Achievement/reputation system
+
+- [ ] **Technical Infrastructure**
+  - Real-time features (WebSocket connections)
+  - Background job processing for media
+  - Advanced caching strategies
+  - Content analytics for creators
+  - API rate limiting
+  - Monetization features (premium, marketplace)
+
+### Database Design Strategy
+```
+MVP Phase 1: Core Vehicle Assistant
+├── Focus on AI analysis workflow
+├── User auth and vehicle management
+└── Chat functionality
+
+MVP Phase 2: Basic Social
+├── Post sharing (Pinterest-style)
+├── Follow relationships
+└── Basic engagement (likes, comments)
+
+MVP Phase 3: Advanced Social
+├── Collections and organization
+├── Discovery and search
+└── Notifications and real-time features
+
+MVP Phase 4: Full Platform
+├── Content moderation and safety
+├── Advanced algorithms and recommendations
+└── Monetization and platform features
+```

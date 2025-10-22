@@ -11,11 +11,7 @@ export default function Home() {
   const { user, loading, signInWithGoogle } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (user && !loading) {
-      router.push('/chat')
-    }
-  }, [user, loading, router])
+  // No redirect - allow staying on homepage
 
   if (loading) {
     return (
@@ -25,9 +21,7 @@ export default function Home() {
     )
   }
 
-  if (user) {
-    return null // Will redirect to /chat
-  }
+  // Always show homepage content
   return (
     <div className="relative min-h-[calc(100vh-80px)] flex items-center">
       <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16 w-full">
