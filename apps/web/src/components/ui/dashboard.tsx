@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { ContentType } from "@/types"
 import { IconChevronCompactRight } from "@tabler/icons-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import React, { FC, useState } from "react"
+import React, { FC, useState, useEffect } from "react"
 import { useSelectFileHandler } from "../chat/chat-hooks/use-select-file-handler"
 import { CommandK } from "../utility/command-k"
 import { ThreeScene } from "../3d/ThreeScene"
@@ -34,9 +34,20 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
   const [contentType, setContentType] = useState<ContentType>(
     tabValue as ContentType
   )
-  const [showSidebar, setShowSidebar] = useState(
-    localStorage.getItem("showSidebar") === "true"
-  )
+  const [showSidebar, setShowSidebar] = useState(false)
+  
+  // Safely access localStorage after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem("showSidebar")
+    if (saved !== null) {
+      setShowSidebar(saved === "true")
+    }
+  }, [])
+  
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("showSidebar", showSidebar.toString())
+  }, [showSidebar])
   const [isDragging, setIsDragging] = useState(false)
   const [sceneHeight, setSceneHeight] = useState(300)
   const [isResizing, setIsResizing] = useState(false)
