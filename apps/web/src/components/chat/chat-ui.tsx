@@ -188,7 +188,7 @@ export const ChatUI: FC<ChatUIProps> = ({}) => {
   }
 
   return (
-    <div className="relative flex h-full flex-col items-center">
+    <div className="relative flex h-full w-full flex-col items-center">
       <div className="absolute left-4 top-2.5 flex justify-center">
         <ChatScrollButtons
           isAtTop={isAtTop}
@@ -205,7 +205,7 @@ export const ChatUI: FC<ChatUIProps> = ({}) => {
 
 
       <div
-        className="flex size-full flex-col overflow-auto border-b"
+        className="flex h-full w-full flex-col overflow-auto border-b"
         onScroll={handleScroll}
       >
         <div ref={messagesStartRef} />

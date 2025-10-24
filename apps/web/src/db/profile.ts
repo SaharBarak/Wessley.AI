@@ -1,38 +1,34 @@
-import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { supabase } from "@/lib/supabase/typed-client"
+import { Profile, ProfileInsert, ProfileUpdate } from "@/types/database"
 
-export const getProfileByUserId = async (userId: string) => {
+export const getProfileByUserId = async (userId: string): Promise<Profile | null> => {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", userId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw new Error(error.message)
   }
 
-  if (!profile) {
-    throw new Error("Profile not found")
-  }
-
   return profile
 }
 
-export const getProfilesByUserId = async (userId: string) => {
+export const getProfilesByUserId = async (userId: string): Promise<Profile[]> => {
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", userId)
 
-  if (!profiles) {
+  if (error) {
     throw new Error(error.message)
   }
 
-  return profiles
+  return profiles || []
 }
 
-export const createProfile = async (profile: TablesInsert<"profiles">) => {
+export const createProfile = async (profile: ProfileInsert): Promise<Profile> => {
   const { data: createdProfile, error } = await supabase
     .from("profiles")
     .insert([profile])
@@ -47,24 +43,47 @@ export const createProfile = async (profile: TablesInsert<"profiles">) => {
 }
 
 export const updateProfile = async (
-  profileId: string,
-  profile: TablesUpdate<"profiles">
-) => {
-  const { data: updatedProfile, error } = await supabase
+  userId: string,
+  profile: ProfileUpdate
+): Promise<Profile> => {
+  // First, try to get the existing profile
+  const { data: existingProfile } = await supabase
     .from("profiles")
-    .update(profile)
-    .eq("id", profileId)
     .select("*")
-    .single()
+    .eq("user_id", userId)
+    .maybeSingle()
 
-  if (error) {
-    throw new Error(error.message)
+  if (existingProfile) {
+    // Profile exists, update it
+    const { data: updatedProfile, error } = await supabase
+      .from("profiles")
+      .update(profile)
+      .eq("user_id", userId)
+      .select("*")
+      .single()
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return updatedProfile
+  } else {
+    // Profile doesn't exist, create it
+    const { data: createdProfile, error } = await supabase
+      .from("profiles")
+      .insert([{ user_id: userId, ...profile }])
+      .select("*")
+      .single()
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return createdProfile
   }
-
-  return updatedProfile
 }
 
-export const deleteProfile = async (profileId: string) => {
+export const deleteProfile = async (profileId: string): Promise<boolean> => {
   const { error } = await supabase.from("profiles").delete().eq("id", profileId)
 
   if (error) {

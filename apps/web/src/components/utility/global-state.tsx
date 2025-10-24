@@ -4,6 +4,9 @@
 
 import { ChatbotUIContext } from "@/context/context"
 import { getProfileByUserId } from "@/db/profile"
+import { getUserOnboarding } from "@/db/user-onboarding"
+import { getUserPreferences } from "@/db/user-preferences"
+import { getUserSocialLinks } from "@/db/user-social-links"
 import { getWorkspaceImageFromStorage } from "@/db/storage/workspace-images"
 import { getWorkspacesByUserId } from "@/db/workspaces"
 import { convertBlobToBase64 } from "@/lib/blob-to-b64"
@@ -13,6 +16,7 @@ import {
   fetchOpenRouterModels
 } from "@/lib/models/fetch-models"
 import { createClient } from "@/lib/supabase/client"
+import { supabase as typedSupabase } from "@/lib/supabase/typed-client"
 import { Tables } from "@/supabase/types"
 import {
   ChatFile,
@@ -124,6 +128,37 @@ export const GlobalState: FC<GlobalStateProps> = ({ children }) => {
   const [toolInUse, setToolInUse] = useState<string>("none")
 
   useEffect(() => {
+    // Listen for auth state changes
+    const { data: { subscription } } = typedSupabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session)
+      
+      if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
+        const profile = await fetchStartingData()
+        
+        if (profile) {
+          const hostedModelRes = await fetchHostedModels(profile)
+          if (!hostedModelRes) return
+
+          setEnvKeyMap(hostedModelRes.envKeyMap)
+          setAvailableHostedModels(hostedModelRes.hostedModels)
+
+          if (
+            profile["openrouter_api_key"] ||
+            hostedModelRes.envKeyMap["openrouter"]
+          ) {
+            const openRouterModels = await fetchOpenRouterModels()
+            if (!openRouterModels) return
+            setAvailableOpenRouterModels(openRouterModels)
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null)
+        setWorkspaces([])
+        setChats([])
+      }
+    })
+
+    // Initial fetch
     ;(async () => {
       const profile = await fetchStartingData()
 
@@ -150,19 +185,68 @@ export const GlobalState: FC<GlobalStateProps> = ({ children }) => {
         setAvailableLocalModels(localModels)
       }
     })()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchStartingData = async () => {
-    const supabase = createClient()
-    const session = (await supabase.auth.getSession()).data.session
+    const session = (await typedSupabase.auth.getSession()).data.session
+
+    console.log('GlobalState - Session:', session)
 
     if (session) {
       const user = session.user
+      console.log('GlobalState - User:', user)
 
-      const profile = await getProfileByUserId(user.id)
-      setProfile(profile)
+      try {
+        // Fetch all user data in parallel
+        const [profile, onboarding, preferences, socialLinks] = await Promise.all([
+          getProfileByUserId(user.id),
+          getUserOnboarding(user.id),
+          getUserPreferences(user.id),
+          getUserSocialLinks(user.id)
+        ])
 
-      if (!profile.has_onboarded) {
+        console.log('GlobalState - Fetched profile:', profile)
+        console.log('GlobalState - Profile avatar_url:', profile?.avatar_url)
+        console.log('GlobalState - Profile image_url:', profile?.image_url)
+        console.log('GlobalState - User avatar_url:', user.user_metadata?.avatar_url)
+
+        // If profile exists but doesn't have avatar, update it with Google avatar
+        if (profile && !profile.avatar_url && user.user_metadata?.avatar_url) {
+          const { error: updateError } = await typedSupabase
+            .from('profiles')
+            .update({ 
+              avatar_url: user.user_metadata.avatar_url,
+              full_name: user.user_metadata.full_name || profile.full_name
+            })
+            .eq('user_id', user.id)
+          
+          if (!updateError) {
+            const updatedProfile = { 
+              ...profile, 
+              avatar_url: user.user_metadata.avatar_url,
+              full_name: user.user_metadata.full_name || profile.full_name
+            }
+            setProfile(updatedProfile)
+          } else {
+            setProfile(profile)
+          }
+        } else {
+          setProfile(profile)
+        }
+        
+        // Check if user has completed onboarding
+        if (!onboarding || !onboarding.has_completed) {
+          return router.push("/setup")
+        }
+        
+      } catch (error) {
+        console.error("Error loading user data:", error)
+        // If there's an error, it might mean the trigger didn't work
+        // In this case, we should redirect to setup to create missing data
         return router.push("/setup")
       }
 

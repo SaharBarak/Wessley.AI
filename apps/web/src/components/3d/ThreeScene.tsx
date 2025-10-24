@@ -1,127 +1,208 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import * as React from "react"
+import { Suspense, useRef } from 'react'
+import { Canvas, useFrame, useLoader } from '@react-three/fiber'
+import { OrbitControls, Grid, useGLTF, Environment, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 
+// Vehicle GLB Component with placeholder fallback
+function VehicleModel({ url }: { url?: string }) {
+  const groupRef = useRef<THREE.Group>(null)
+  
+  useFrame((state) => {
+    if (groupRef.current) {
+      // Gentle floating animation
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.1
+    }
+  })
+
+  if (!url) {
+    // Placeholder: Simple car-like shape
+    return (
+      <group ref={groupRef} position={[0, 0.5, 0]}>
+        {/* Car body */}
+        <mesh position={[0, 0.3, 0]}>
+          <boxGeometry args={[2, 0.6, 4]} />
+          <meshStandardMaterial color="#4a90e2" metalness={0.7} roughness={0.3} />
+        </mesh>
+        
+        {/* Car roof */}
+        <mesh position={[0, 0.8, -0.5]}>
+          <boxGeometry args={[1.6, 0.4, 2]} />
+          <meshStandardMaterial color="#4a90e2" metalness={0.7} roughness={0.3} />
+        </mesh>
+        
+        {/* Wheels */}
+        {[[-0.8, -0.1, 1.3], [0.8, -0.1, 1.3], [-0.8, -0.1, -1.3], [0.8, -0.1, -1.3]].map((pos, i) => (
+          <mesh key={i} position={pos} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
+            <meshStandardMaterial color="#333" />
+          </mesh>
+        ))}
+        
+        {/* Headlights */}
+        <mesh position={[-0.6, 0.2, 2.1]}>
+          <sphereGeometry args={[0.15, 8, 8]} />
+          <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={0.3} />
+        </mesh>
+        <mesh position={[0.6, 0.2, 2.1]}>
+          <sphereGeometry args={[0.15, 8, 8]} />
+          <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={0.3} />
+        </mesh>
+      </group>
+    )
+  }
+
+  // Load actual GLB model when URL is provided
+  const { scene } = useGLTF(url)
+  
+  return (
+    <group ref={groupRef}>
+      <primitive object={scene} scale={1} />
+    </group>
+  )
+}
+
+// Loading fallback component
+function LoadingPlaceholder() {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.x = state.clock.elapsedTime * 0.5
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.3
+    }
+  })
+
+  return (
+    <mesh ref={meshRef} position={[0, 1, 0]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="#666" wireframe />
+    </mesh>
+  )
+}
+
+// Main scene setup
+function Scene() {
+  return (
+    <>
+      {/* Camera with good default position */}
+      <PerspectiveCamera makeDefault position={[5, 3, 5]} fov={60} />
+      
+      {/* Lighting setup */}
+      <ambientLight intensity={0.4} />
+      <directionalLight 
+        position={[10, 10, 5]} 
+        intensity={1}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+      />
+      <pointLight position={[-10, -10, -10]} intensity={0.3} color="#4a90e2" />
+      
+      {/* Environment for reflections */}
+      <Environment preset="studio" background={false} />
+      
+      {/* Ground Grid */}
+      <Grid 
+        position={[0, 0, 0]}
+        args={[20, 20]}
+        cellSize={1}
+        cellThickness={0.5}
+        cellColor="#444"
+        sectionSize={5}
+        sectionThickness={1}
+        sectionColor="#666"
+        fadeDistance={30}
+        fadeStrength={1}
+        infiniteGrid={true}
+      />
+      
+      {/* Sky Grid - Top plane */}
+      <Grid 
+        position={[0, 15, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        args={[60, 60]}
+        cellSize={3}
+        cellThickness={0.4}
+        cellColor="#334155"
+        sectionSize={15}
+        sectionThickness={0.8}
+        sectionColor="#475569"
+        fadeDistance={80}
+        fadeStrength={0.7}
+        infiniteGrid={true}
+      />
+      
+      {/* Side Grid - Left */}
+      <Grid 
+        position={[-20, 10, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+        args={[40, 20]}
+        cellSize={2}
+        cellThickness={0.2}
+        cellColor="#2a2a2a"
+        sectionSize={10}
+        sectionThickness={0.3}
+        sectionColor="#444"
+        fadeDistance={50}
+        fadeStrength={0.3}
+      />
+      
+      {/* Side Grid - Right */}
+      <Grid 
+        position={[20, 10, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
+        args={[40, 20]}
+        cellSize={2}
+        cellThickness={0.2}
+        cellColor="#2a2a2a"
+        sectionSize={10}
+        sectionThickness={0.3}
+        sectionColor="#444"
+        fadeDistance={50}
+        fadeStrength={0.3}
+      />
+      
+      {/* Vehicle model */}
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <VehicleModel />
+      </Suspense>
+      
+      {/* Orbit controls for interaction */}
+      <OrbitControls
+        enablePan={true}
+        enableZoom={true}
+        enableRotate={true}
+        minDistance={3}
+        maxDistance={20}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 2.2}
+        target={[0, 0, 0]}
+      />
+    </>
+  )
+}
+
 export function ThreeScene() {
-  const mountRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<THREE.Scene>()
-  const rendererRef = useRef<THREE.WebGLRenderer>()
-  const animationRef = useRef<number>()
 
-  useEffect(() => {
-    if (!mountRef.current) return
-
-    const width = mountRef.current.clientWidth
-    const height = mountRef.current.clientHeight
-
-    // Scene setup
-    const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x1a1a1a)
-    sceneRef.current = scene
-
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
-    camera.position.set(5, 5, 5)
-    camera.lookAt(0, 0, 0)
-
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
-    renderer.setSize(width, height)
-    renderer.setPixelRatio(window.devicePixelRatio)
-    rendererRef.current = renderer
-    mountRef.current.appendChild(renderer.domElement)
-
-    // Grid setup
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x444444)
-    scene.add(gridHelper)
-
-    // Axes helper (optional)
-    const axesHelper = new THREE.AxesHelper(2)
-    scene.add(axesHelper)
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
-    scene.add(ambientLight)
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-    directionalLight.position.set(5, 5, 5)
-    scene.add(directionalLight)
-
-    // Controls (basic mouse interaction)
-    let mouseX = 0
-    let mouseY = 0
-    let targetX = 0
-    let targetY = 0
-
-    const onMouseMove = (event: MouseEvent) => {
-      if (!mountRef.current) return
+  return (
+    <div className="w-full h-full">
+      <Canvas
+        shadows
+        camera={{ position: [5, 3, 5], fov: 60 }}
+        gl={{ 
+          antialias: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1
+        }}
+        style={{ background: '#1a1a1a', borderBottomLeftRadius: '10rem', borderBottomRightRadius: '10rem' }}
+      >
+        <Scene />
+      </Canvas>
       
-      const rect = mountRef.current.getBoundingClientRect()
-      const x = event.clientX - rect.left
-      const y = event.clientY - rect.top
-      
-      // Only track if mouse is within bounds
-      if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-        mouseX = (x / rect.width) * 2 - 1
-        mouseY = -(y / rect.height) * 2 + 1
-        targetX = mouseX * 0.5
-        targetY = mouseY * 0.5
-      }
-    }
-
-    mountRef.current.addEventListener('mousemove', onMouseMove)
-
-    // Animation loop
-    const animate = () => {
-      animationRef.current = requestAnimationFrame(animate)
-
-      // Smooth camera rotation based on mouse
-      camera.position.x += (targetX - camera.position.x) * 0.05
-      camera.position.y += (targetY - camera.position.y) * 0.05
-      camera.lookAt(0, 0, 0)
-
-      renderer.render(scene, camera)
-    }
-
-    animate()
-
-    // Handle resize
-    const handleResize = () => {
-      if (!mountRef.current) return
-      const newWidth = mountRef.current.clientWidth
-      const newHeight = mountRef.current.clientHeight
-
-      camera.aspect = newWidth / newHeight
-      camera.updateProjectionMatrix()
-      renderer.setSize(newWidth, newHeight)
-    }
-
-    // Watch for container size changes
-    const resizeObserver = new ResizeObserver(handleResize)
-    resizeObserver.observe(mountRef.current)
-
-    window.addEventListener('resize', handleResize)
-
-    // Cleanup
-    return () => {
-      if (mountRef.current) {
-        mountRef.current.removeEventListener('mousemove', onMouseMove)
-      }
-      window.removeEventListener('resize', handleResize)
-      resizeObserver.disconnect()
-      
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-      
-      if (mountRef.current && renderer.domElement) {
-        mountRef.current.removeChild(renderer.domElement)
-      }
-      
-      renderer.dispose()
-    }
-  }, [])
-
-  return <div ref={mountRef} className="w-full h-full" />
+    </div>
+  )
 }

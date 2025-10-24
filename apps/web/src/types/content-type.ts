@@ -1,7 +1,7 @@
 export type ContentType =
   | "chat"
+  | "explore"
   | "gallery"
-  | "budget"
+  | "dashboard"
   | "marketplace"
   | "auto-tuning"
-  | "dashboard"

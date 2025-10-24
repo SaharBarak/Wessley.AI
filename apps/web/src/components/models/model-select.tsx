@@ -102,7 +102,7 @@ export const ModelSelect: FC<ModelSelectProps> = ({
         ) : (
           <Button
             ref={triggerRef}
-            className="flex items-center justify-between"
+            className="flex items-center justify-between hover:bg-accent hover:text-accent-foreground transition-colors"
             variant="ghost"
           >
             <div className="flex items-center">

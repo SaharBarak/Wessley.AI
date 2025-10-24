@@ -7,12 +7,14 @@ interface SidebarSwitchItemProps {
   contentType: ContentType
   icon: React.ReactNode
   onContentTypeChange: (contentType: ContentType) => void
+  isActive?: boolean
 }
 
 export const SidebarSwitchItem: FC<SidebarSwitchItemProps> = ({
   contentType,
   icon,
-  onContentTypeChange
+  onContentTypeChange,
+  isActive = false
 }) => {
   return (
     <WithTooltip
@@ -20,13 +22,16 @@ export const SidebarSwitchItem: FC<SidebarSwitchItemProps> = ({
         <div>{contentType[0].toUpperCase() + contentType.substring(1)}</div>
       }
       trigger={
-        <TabsTrigger
-          className="hover:opacity-50"
-          value={contentType}
+        <button
+          className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+            isActive 
+              ? "bg-accent text-accent-foreground" 
+              : "hover:bg-accent hover:text-accent-foreground"
+          }`}
           onClick={() => onContentTypeChange(contentType as ContentType)}
         >
           {icon}
-        </TabsTrigger>
+        </button>
       }
     />
   )
