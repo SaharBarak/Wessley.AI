@@ -3,7 +3,7 @@ import { TablesInsert, TablesUpdate } from "@/supabase/types"
 
 export const getChatById = async (chatId: string) => {
   const { data: chat } = await supabase
-    .from("chats")
+    .from("chat_conversations")
     .select("*")
     .eq("id", chatId)
     .maybeSingle()
@@ -13,7 +13,7 @@ export const getChatById = async (chatId: string) => {
 
 export const getChatsByWorkspaceId = async (workspaceId: string) => {
   const { data: chats, error } = await supabase
-    .from("chats")
+    .from("chat_conversations")
     .select("*")
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false })
@@ -25,9 +25,9 @@ export const getChatsByWorkspaceId = async (workspaceId: string) => {
   return chats
 }
 
-export const createChat = async (chat: TablesInsert<"chats">) => {
+export const createChat = async (chat: TablesInsert<"chat_conversations">) => {
   const { data: createdChat, error } = await supabase
-    .from("chats")
+    .from("chat_conversations")
     .insert([chat])
     .select("*")
     .single()
@@ -39,9 +39,9 @@ export const createChat = async (chat: TablesInsert<"chats">) => {
   return createdChat
 }
 
-export const createChats = async (chats: TablesInsert<"chats">[]) => {
+export const createChats = async (chats: TablesInsert<"chat_conversations">[]) => {
   const { data: createdChats, error } = await supabase
-    .from("chats")
+    .from("chat_conversations")
     .insert(chats)
     .select("*")
 
@@ -54,10 +54,10 @@ export const createChats = async (chats: TablesInsert<"chats">[]) => {
 
 export const updateChat = async (
   chatId: string,
-  chat: TablesUpdate<"chats">
+  chat: TablesUpdate<"chat_conversations">
 ) => {
   const { data: updatedChat, error } = await supabase
-    .from("chats")
+    .from("chat_conversations")
     .update(chat)
     .eq("id", chatId)
     .select("*")
@@ -71,7 +71,7 @@ export const updateChat = async (
 }
 
 export const deleteChat = async (chatId: string) => {
-  const { error } = await supabase.from("chats").delete().eq("id", chatId)
+  const { error } = await supabase.from("chat_conversations").delete().eq("id", chatId)
 
   if (error) {
     throw new Error(error.message)

@@ -120,52 +120,6 @@ function Scene() {
         infiniteGrid={true}
       />
       
-      {/* Sky Grid - Top plane */}
-      <Grid 
-        position={[0, 15, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-        args={[60, 60]}
-        cellSize={3}
-        cellThickness={0.4}
-        cellColor="#334155"
-        sectionSize={15}
-        sectionThickness={0.8}
-        sectionColor="#475569"
-        fadeDistance={80}
-        fadeStrength={0.7}
-        infiniteGrid={true}
-      />
-      
-      {/* Side Grid - Left */}
-      <Grid 
-        position={[-20, 10, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        args={[40, 20]}
-        cellSize={2}
-        cellThickness={0.2}
-        cellColor="#2a2a2a"
-        sectionSize={10}
-        sectionThickness={0.3}
-        sectionColor="#444"
-        fadeDistance={50}
-        fadeStrength={0.3}
-      />
-      
-      {/* Side Grid - Right */}
-      <Grid 
-        position={[20, 10, 0]}
-        rotation={[0, -Math.PI / 2, 0]}
-        args={[40, 20]}
-        cellSize={2}
-        cellThickness={0.2}
-        cellColor="#2a2a2a"
-        sectionSize={10}
-        sectionThickness={0.3}
-        sectionColor="#444"
-        fadeDistance={50}
-        fadeStrength={0.3}
-      />
-      
       {/* Vehicle model */}
       <Suspense fallback={<LoadingPlaceholder />}>
         <VehicleModel />

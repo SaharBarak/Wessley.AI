@@ -22,8 +22,8 @@ interface ChatbotUIContext {
   setAssistants: Dispatch<SetStateAction<Tables<"assistants">[]>>
   collections: Tables<"collections">[]
   setCollections: Dispatch<SetStateAction<Tables<"collections">[]>>
-  chats: Tables<"chats">[]
-  setChats: Dispatch<SetStateAction<Tables<"chats">[]>>
+  chats: Tables<"chat_conversations">[]
+  setChats: Dispatch<SetStateAction<Tables<"chat_conversations">[]>>
   files: Tables<"files">[]
   setFiles: Dispatch<SetStateAction<Tables<"files">[]>>
   folders: Tables<"folders">[]

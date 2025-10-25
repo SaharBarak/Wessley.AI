@@ -26,6 +26,7 @@ import {
 import { ChatbotUIContext } from "@/context/context"
 import { useRouter } from "next/navigation"
 import { Tables } from "@/supabase/types"
+import { createChat } from "@/db/chats"
 
 interface ProjectSpaceProps {
   projectName: string
@@ -41,18 +42,42 @@ interface ChatItem {
 
 export function ProjectSpace({ projectName, projectId }: ProjectSpaceProps) {
   const router = useRouter()
-  const { chats } = useContext(ChatbotUIContext)
+  const { chats, profile, setChats } = useContext(ChatbotUIContext)
   const [chatInput, setChatInput] = useState("")
   
   // Filter chats by workspace/project ID
   const projectChats = chats.filter(chat => chat.workspace_id === projectId)
 
-  const handleStartChat = () => {
-    if (!chatInput.trim()) return
+  const handleStartChat = async () => {
+    console.log('handleStartChat called', { chatInput: chatInput.trim(), profile: !!profile, projectId })
     
-    // TODO: Implement creating new chat with backend
-    // For now, just clear the input and navigate to chat page
-    setChatInput("")
+    if (!chatInput.trim() || !profile) {
+      console.log('Early return: missing input or profile')
+      return
+    }
+    
+    try {
+      console.log('Creating chat with:', {
+        title: chatInput.trim(),
+        user_id: profile.user_id,
+        workspace_id: projectId,
+        ai_model: "gpt-4"
+      })
+      
+      const newChat = await createChat({
+        title: chatInput.trim(),
+        user_id: profile.user_id,
+        workspace_id: projectId,
+        ai_model: "gpt-4"
+      })
+      
+      console.log('Chat created successfully:', newChat)
+      setChats(prevChats => [...prevChats, newChat])
+      setChatInput("")
+      router.push(`/c/${newChat.id}`)
+    } catch (error) {
+      console.error('Error creating chat:', error)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -164,7 +189,14 @@ export function ProjectSpace({ projectName, projectId }: ProjectSpaceProps) {
               whileHover={{ backgroundColor: "#404040" }}
               transition={{ duration: 0.2 }}
             >
-              <IconPlus className="w-5 h-5 text-gray-400" />
+              <motion.button 
+                onClick={handleStartChat}
+                whileHover={{ scale: 1.1 }} 
+                whileTap={{ scale: 0.9 }}
+                className="p-1 rounded-md hover:bg-gray-600/50 transition-colors"
+              >
+                <IconPlus className="w-5 h-5 text-gray-400 hover:text-gray-300" />
+              </motion.button>
               <Input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -209,7 +241,7 @@ export function ProjectSpace({ projectName, projectId }: ProjectSpaceProps) {
                   onClick={() => router.push(`/c/${chat.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium mb-1 text-white truncate">{chat.name}</h3>
+                    <h3 className="text-sm font-medium mb-1 text-white truncate">{chat.title}</h3>
                     <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed">
                       {/* Show latest message or placeholder */}
                       New conversation

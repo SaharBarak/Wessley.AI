@@ -93,7 +93,7 @@ export function NewWorkspaceDialog({ children, open: externalOpen, onOpenChange 
       form.reset()
 
       // Navigate to the new project
-      router.push(`/${newWorkspace.id}/chat`)
+      router.push(`/g/${newWorkspace.id}/project`)
     } catch (error) {
       console.error("Error creating project:", error)
       toast.error("Failed to create project. Please try again.")

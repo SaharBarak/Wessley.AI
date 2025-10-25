@@ -27,6 +27,7 @@ import {
 import Image from "next/image"
 import { ProfileSettings } from "../utility/profile-settings"
 import { createClient } from "@/lib/supabase/client"
+import { deleteWorkspace } from "@/db/workspaces"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -54,7 +55,7 @@ interface SidebarProps {
 export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, currentView, onToggleSidebar }) => {
   const router = useRouter()
   const { open } = useSearch()
-  const { profile, workspaces, chats, setWorkspaces, setSelectedWorkspace } = useContext(ChatbotUIContext)
+  const { profile, workspaces, chats, selectedWorkspace, setWorkspaces, setSelectedWorkspace } = useContext(ChatbotUIContext)
   const [authUser, setAuthUser] = useState<any>(null)
 
   useEffect(() => {
@@ -131,7 +132,8 @@ export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, curre
   }
 
   const handleDelete = (workspace: any) => {
-    setSelectedWorkspace(workspace)
+    console.log('handleDelete called with workspace:', workspace)
+    setWorkspaceForAction(workspace)
     setDeleteDialogOpen(true)
   }
 
@@ -160,24 +162,40 @@ export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, curre
   }
 
   const confirmDelete = async () => {
-    if (!workspaceForAction) return
+    console.log('confirmDelete called, workspaceForAction:', workspaceForAction)
+    if (!workspaceForAction) {
+      console.log('No workspaceForAction, returning early')
+      return
+    }
     
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('workspaces')
-        .delete()
-        .eq('id', workspaceForAction.id)
-      
-      if (!error) {
-        setWorkspaces(workspaces.filter(w => w.id !== workspaceForAction.id))
-      }
+      console.log('Deleting workspace:', workspaceForAction.id)
+      await deleteWorkspace(workspaceForAction.id)
+      console.log('Workspace deleted successfully')
+
+      setWorkspaces(prevWorkspaces => {
+        const filteredWorkspaces = prevWorkspaces.filter(
+          w => w.id !== workspaceForAction.id
+        )
+
+        // If we deleted the currently selected workspace, switch to another one
+        if (selectedWorkspace?.id === workspaceForAction.id) {
+          const defaultWorkspace = filteredWorkspaces[0]
+          if (defaultWorkspace) {
+            setSelectedWorkspace(defaultWorkspace)
+            router.push(`/g/${defaultWorkspace.id}/project`)
+          }
+        }
+
+        return filteredWorkspaces
+      })
     } catch (error) {
       console.error('Error deleting workspace:', error)
     }
     
+    console.log('Closing dialog and clearing workspaceForAction')
     setDeleteDialogOpen(false)
-    setSelectedWorkspace(null)
+    setWorkspaceForAction(null)
   }
 
   if (!showSidebar) return null
@@ -355,7 +373,7 @@ export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, curre
                               onClick={() => router.push(`/c/${chat.id}`)}
                             >
                               <div className="w-1 h-1 rounded-full bg-white/30 mr-2"></div>
-                              <span className="truncate">{chat.name}</span>
+                              <span className="truncate">{chat.title || 'New Chat'}</span>
                             </Button>
                           ))}
                         </div>
@@ -383,19 +401,25 @@ export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, curre
               </div>
             </button>
             
-            {expandedSections.has('chats') && chats.length > 0 && (
-              <>
-                {chats.slice(0, 5).map((chat) => (
-                  <Button
-                    key={chat.id}
-                    variant="ghost"
-                    className="w-full justify-start h-8 px-3 text-white/60 hover:bg-white/10 hover:text-white/80"
-                  >
-                    <span className="truncate text-sm">{chat.name}</span>
-                  </Button>
-                ))}
-              </>
-            )}
+            {expandedSections.has('chats') && (() => {
+              // Show only chats that are NOT associated with any specific workspace (general chats)
+              const generalChats = chats.filter(chat => !chat.workspace_id || 
+                !workspaces.some(workspace => workspace.id === chat.workspace_id))
+              return generalChats.length > 0 && (
+                <>
+                  {generalChats.slice(0, 5).map((chat) => (
+                    <Button
+                      key={chat.id}
+                      variant="ghost"
+                      className="w-full justify-start h-8 px-3 text-white/60 hover:bg-white/10 hover:text-white/80"
+                      onClick={() => router.push(`/c/${chat.id}`)}
+                    >
+                      <span className="truncate text-sm">{chat.title || 'New Chat'}</span>
+                    </Button>
+                  ))}
+                </>
+              )
+            })()}
           </div>
         </div>
       </ScrollArea>
@@ -500,7 +524,13 @@ export const Sidebar: FC<SidebarProps> = ({ showSidebar, onMainViewChange, curre
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                console.log('Delete button clicked')
+                confirmDelete()
+              }}
+            >
               Delete
             </Button>
           </DialogFooter>

@@ -12,7 +12,9 @@ interface AppShellProps {
 export function AppShell({ children, onDashboardOpen }: AppShellProps) {
   const pathname = usePathname()
   const hiddenNavRoutes = ['/chat', '/setup']
-  const shouldHideNav = hiddenNavRoutes.includes(pathname)
+  const shouldHideNav = hiddenNavRoutes.includes(pathname) || 
+                        pathname.startsWith('/g/') || 
+                        pathname.startsWith('/c/')
 
   return (
     <div className="min-h-screen bg-transparent font-sans antialiased">

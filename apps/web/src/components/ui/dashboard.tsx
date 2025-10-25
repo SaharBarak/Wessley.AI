@@ -11,9 +11,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import React, { FC, useState, useEffect, useContext } from "react"
 import { ChatbotUIContext } from "@/context/context"
 import { motion, AnimatePresence } from "framer-motion"
-import { useSelectFileHandler } from "../chat/chat-hooks/use-select-file-handler"
-import { ThreeScene } from "../3d/ThreeScene"
-import { SceneExplorer } from "../scene-explorer/scene-explorer"
 import { Explore } from "../vehicle/explore"
 import { Gallery } from "../vehicle/gallery"
 import { ProjectSpace } from "../project/project-space"
@@ -34,7 +31,6 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
   const searchParams = useSearchParams()
   const mainTabValue = searchParams.get("view") || "chat"
 
-  const { handleSelectDeviceFile } = useSelectFileHandler()
   const { workspaces, selectedWorkspace, setSelectedWorkspace } = useContext(ChatbotUIContext)
 
   const [mainView, setMainView] = useState<ContentType>(mainTabValue as ContentType)
@@ -63,65 +59,11 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("showSidebar", showSidebar.toString())
   }, [showSidebar])
-  const [isDragging, setIsDragging] = useState(false)
-  const [sceneHeight, setSceneHeight] = useState(300)
-  const [isResizing, setIsResizing] = useState(false)
-
-  const onFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-
-    const files = event.dataTransfer.files
-    const file = files[0]
-
-    handleSelectDeviceFile(file)
-
-    setIsDragging(false)
-  }
-
-  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    setIsDragging(false)
-  }
-
-  const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
 
   const handleToggleSidebar = () => {
     setShowSidebar(prevState => !prevState)
     localStorage.setItem("showSidebar", String(!showSidebar))
   }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsResizing(true)
-  }
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing) return
-    const newHeight = Math.max(200, Math.min(600, e.clientY - 100))
-    setSceneHeight(newHeight)
-  }
-
-  const handleMouseUp = () => {
-    setIsResizing(false)
-  }
-
-  React.useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-      }
-    }
-  }, [isResizing])
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -148,42 +90,9 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative min-w-0 overflow-hidden">
         {mainView === "chat" && (
-          <>
-            {/* Resizable 3D Scene Area */}
-            <div 
-              className="bg-background flex relative w-full overflow-hidden"
-              style={{ height: `${sceneHeight}px` }}
-              onDrop={onFileDrop}
-              onDragOver={onDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-            >
-              {/* Center 3D Scene */}
-              <div className="flex-1 bg-muted/10 relative overflow-hidden">
-                {isDragging ? (
-                  <div className="flex h-full items-center justify-center bg-black/50 text-2xl text-white">
-                    drop file here
-                  </div>
-                ) : (
-                  <ThreeScene />
-                )}
-                
-                {/* Scene Explorer Overlay */}
-                <SceneExplorer />
-              </div>
-
-              {/* Resize Handle */}
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-1 bg-border hover:bg-accent cursor-ns-resize"
-                onMouseDown={handleMouseDown}
-              />
-            </div>
-
-            {/* Bottom Chat Interface */}
-            <div className="flex-1 border-t bg-background w-full overflow-hidden">
-              {children}
-            </div>
-          </>
+          <div className="flex-1 bg-background w-full overflow-hidden">
+            {children}
+          </div>
         )}
 
         {mainView === "explore" && (
